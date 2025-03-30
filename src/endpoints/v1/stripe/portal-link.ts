@@ -41,7 +41,7 @@ export class CreatePortalLink extends OpenAPIRoute {
         return_url: process.env.STRIPE_SESSION_REDIRECT_URL,
       })
 
-      return Response.json({ url })
+      return { url }
     })
   }
 }

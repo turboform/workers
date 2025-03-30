@@ -86,13 +86,14 @@ export class StripeWebhooks extends OpenAPIRoute {
       console.log(`Event received: ${event.type}`)
     } catch (err) {
       console.error(`Error message: ${err.message}`)
-      return Response.json({
+      return {
+        success: false,
+        statusCode: 400,
         error: {
-          statusCode: 400,
           type: 'webhook_error',
           message: 'Webhook Error: cannot construct Stripe event. Check logs for more info.',
         }
-      }, { status: 400 })
+      }
     }
 
     if (relevantEvents.has(event.type)) {
@@ -143,29 +144,34 @@ export class StripeWebhooks extends OpenAPIRoute {
             break
           default:
             console.error('Unknown event type to process.')
-            return Response.json({
+            return {
+              success: false,
+              statusCode: 400,
               error: {
-                statusCode: 400,
                 type: 'unknown_event_type',
                 message: 'Unknown event type to process.',
               }
-            }, { status: 400 })
-
+            }
         }
       } catch (error) {
         console.error(error)
-        return Response.json({
+        return {
+          success: false,
+          statusCode: 400,
           error: {
-            statusCode: 400,
             type: 'failed_to_handle_webhook',
             message: 'Failed to handle webhook. Check the logs for more info.',
           }
-        }, { status: 400 })
+        }
       }
     }
 
-    return Response.json({
-      received: true,
-    }, { status: 200 })
+    return {
+      success: true,
+      statusCode: 200,
+      data: {
+        received: true,
+      }
+    }
   }
 }

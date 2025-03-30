@@ -58,7 +58,7 @@ export class CreateCheckoutSession extends OpenAPIRoute {
         cancel_url: process.env.CHECKOUT_CANCEL_REDIRECT_URL,
       })
 
-      return Response.json({ sessionId: session.id })
+      return { sessionId: session.id }
     })
   }
 }
