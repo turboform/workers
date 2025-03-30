@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
-export const stripeClient = new Stripe(
-  process.env.STRIPE_SECRET_KEY_LIVE ?? process.env.STRIPE_SECRET_KEY,
+export const stripeClient = (apiKey: string) => new Stripe(
+  apiKey,
   {
     apiVersion: '2025-02-24.acacia',
   }

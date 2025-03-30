@@ -1,8 +1,13 @@
+import { AppContext } from 'lib/types/app-context'
 import { stripeClient } from 'utils/clients/stripe'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 
-export const getOrCreateCustomer = async (userId: string, email: string): Promise<string | null> => {
-  const { data, error: selectError } = await supabaseAdminClient
+export const getOrCreateCustomer = async (
+  c: AppContext,
+  userId: string,
+  email: string,
+): Promise<string | null> => {
+  const { data, error: selectError } = await supabaseAdminClient(c)
     .from('stripe_customers')
     .select('stripe_customer_id')
     .eq('user_id', userId)
@@ -16,8 +21,9 @@ export const getOrCreateCustomer = async (userId: string, email: string): Promis
       }
     }
 
-    const customer = await stripeClient.customers.create(customerData)
-    const { error: insertError } = await supabaseAdminClient
+    const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
+    const customer = await stripe.customers.create(customerData)
+    const { error: insertError } = await supabaseAdminClient(c)
       .from('stripe_customers')
       .insert([{
         user_id: userId,
@@ -35,8 +41,8 @@ export const getOrCreateCustomer = async (userId: string, email: string): Promis
   return data?.stripe_customer_id
 }
 
-export const deleteCustomer = async (stripeCustomerId: string) => {
-  const { data, error: selectError } = await supabaseAdminClient
+export const deleteCustomer = async (c: AppContext, stripeCustomerId: string) => {
+  const { data, error: selectError } = await supabaseAdminClient(c)
     .from('stripe_customers')
     .select('user_id')
     .eq('stripe_customer_id', stripeCustomerId)
@@ -47,7 +53,7 @@ export const deleteCustomer = async (stripeCustomerId: string) => {
     return
   }
 
-  const { error: deleteSubscriptionError } = await supabaseAdminClient
+  const { error: deleteSubscriptionError } = await supabaseAdminClient(c)
     .from('subscriptions')
     .delete()
     .match({ user_id: data.user_id })
@@ -57,7 +63,7 @@ export const deleteCustomer = async (stripeCustomerId: string) => {
     return
   }
 
-  const { error: deleteCustomerError } = await supabaseAdminClient
+  const { error: deleteCustomerError } = await supabaseAdminClient(c)
     .from('stripe_customers')
     .delete()
     .match({ 'stripe_customer_id': stripeCustomerId })

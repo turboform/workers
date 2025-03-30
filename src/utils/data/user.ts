@@ -3,12 +3,13 @@ import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { supportedImageTypes } from 'lib/types/supported-image-types'
 import { stripeClient } from 'utils/clients/stripe'
 import { Database } from 'lib/types/database.types';
+import { AppContext } from 'lib/types/app-context';
 
 type Subscription = Database['public']['Tables']['subscriptions']['Row']
 
 export const getSubscriptionForUser =
-  async (userId: string): Promise<Subscription | null> => {
-    const { data, error } = await supabaseAdminClient
+  async (c: AppContext, userId: string): Promise<Subscription | null> => {
+    const { data, error } = await supabaseAdminClient(c)
       .from('subscriptions')
       .select('*, prices(*, products(*))')
       .in('status', ['active'])
@@ -23,6 +24,7 @@ export const getSubscriptionForUser =
   }
 
 export const manageSubscriptionStatusChange = async (
+  c: AppContext,
   subscriptionId: string,
   customerId: string,
   createAction: boolean = false,
@@ -30,7 +32,7 @@ export const manageSubscriptionStatusChange = async (
   const {
     data: { user_id: uuid },
     error: noCustomerError
-  } = await supabaseAdminClient
+  } = await supabaseAdminClient(c)
     .from('stripe_customers')
     .select('user_id')
     .eq('stripe_customer_id', customerId)
@@ -41,24 +43,25 @@ export const manageSubscriptionStatusChange = async (
     return
   }
 
-  const subscription = await stripeClient.subscriptions.retrieve(subscriptionId, {
+  const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
     expand: ['default_payment_method']
   })
 
-  const { error } = await supabaseAdminClient
+  const { error } = await supabaseAdminClient(c)
     .from('subscriptions')
     .upsert([{
       id: subscription.id,
       user_id: uuid,
       metadata: subscription.metadata || null,
-      status: subscription.status === 'active' || 
-              subscription.status === 'canceled' || 
-              subscription.status === 'incomplete' || 
-              subscription.status === 'incomplete_expired' || 
-              subscription.status === 'past_due' || 
-              subscription.status === 'unpaid' 
-                ? subscription.status 
-                : null,
+      status: subscription.status === 'active' ||
+        subscription.status === 'canceled' ||
+        subscription.status === 'incomplete' ||
+        subscription.status === 'incomplete_expired' ||
+        subscription.status === 'past_due' ||
+        subscription.status === 'unpaid'
+        ? subscription.status
+        : null,
       price_id: subscription.items.data[0].price.id,
       quantity: subscription.items.data[0].quantity || null,
       cancel_at_period_end: subscription.cancel_at_period_end,
@@ -79,11 +82,12 @@ export const manageSubscriptionStatusChange = async (
   }
 
   if (createAction && subscription.default_payment_method) {
-    await copyBillingDetailsToCustomer(uuid, subscription.default_payment_method)
+    await copyBillingDetailsToCustomer(c, uuid, subscription.default_payment_method)
   }
 }
 
 export const updateStripeUserDetails = async (
+  c: AppContext,
   customerId: string,
   address: Stripe.Address,
   payment_method: string,
@@ -91,7 +95,7 @@ export const updateStripeUserDetails = async (
   const {
     data: { user_id: uuid },
     error: noCustomerError
-  } = await supabaseAdminClient
+  } = await supabaseAdminClient(c)
     .from('stripe_customers')
     .select('user_id')
     .eq('stripe_customer_id', customerId)
@@ -103,8 +107,9 @@ export const updateStripeUserDetails = async (
   }
 
   if (payment_method) {
-    const paymentMethod = await stripeClient.paymentMethods.retrieve(payment_method)
-    const { error: updatePaymentMethodError } = await supabaseAdminClient
+    const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
+    const paymentMethod = await stripe.paymentMethods.retrieve(payment_method)
+    const { error: updatePaymentMethodError } = await supabaseAdminClient(c)
       .from('user_details')
       .update({
         payment_method: paymentMethod[paymentMethod.type] as any,
@@ -117,7 +122,7 @@ export const updateStripeUserDetails = async (
   }
 
   if (address) {
-    const { error } = await supabaseAdminClient
+    const { error } = await supabaseAdminClient(c)
       .from('user_details')
       .update({
         billing_address: address as any,
@@ -130,32 +135,32 @@ export const updateStripeUserDetails = async (
   }
 }
 
-export const deleteUser = async (userId: string) => {
+export const deleteUser = async (c: AppContext, userId: string) => {
 
   // delete user profile pictures
   const fileName = Buffer.from(userId.replace(/-/g, ''), 'base64').toString('base64')
   const filePaths = supportedImageTypes.map(t => `public/${fileName}${t.extension}`)
-  const { error: profilePicError } = await supabaseAdminClient
+  const { error: profilePicError } = await supabaseAdminClient(c)
     .storage
     .from('avatars')
     .remove(filePaths)
 
-  const { error: stripeCustomerError } = await supabaseAdminClient
+  const { error: stripeCustomerError } = await supabaseAdminClient(c)
     .from('stripe_customers')
     .delete()
     .match({ user_id: userId })
 
-  const { error: subscriptionError } = await supabaseAdminClient
+  const { error: subscriptionError } = await supabaseAdminClient(c)
     .from('subscriptions')
     .delete()
     .match({ user_id: userId })
 
-  const { error: userDetailError } = await supabaseAdminClient
+  const { error: userDetailError } = await supabaseAdminClient(c)
     .from('user_details')
     .delete()
     .match({ id: userId })
 
-  const { error: userDeleteError } = await supabaseAdminClient.auth.admin.deleteUser(userId)
+  const { error: userDeleteError } = await supabaseAdminClient(c).auth.admin.deleteUser(userId)
 
   if (profilePicError || stripeCustomerError || subscriptionError || userDetailError || userDeleteError) {
     throw (
@@ -170,12 +175,13 @@ export const deleteUser = async (userId: string) => {
 }
 
 const copyBillingDetailsToCustomer = async (
+  c: AppContext,
   uuid: string,
   payment_method: Stripe.PaymentMethod | string,
 ) => {
   if (typeof payment_method !== 'string') {
     const { address } = payment_method.billing_details
-    const { error } = await supabaseAdminClient
+    const { error } = await supabaseAdminClient(c)
       .from('user_details')
       .update({
         billing_address: address as any,

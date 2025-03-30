@@ -23,7 +23,7 @@ export async function ProtectedRoute(
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data, error } = await supabaseAdminClient.auth.getUser(token)
+    const { data, error } = await supabaseAdminClient(context).auth.getUser(token)
     if (error || !data) {
       return {
         success: false,

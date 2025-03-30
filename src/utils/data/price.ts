@@ -1,8 +1,12 @@
 import Stripe from 'stripe'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { Database } from 'lib/types/database.types'
+import { AppContext } from 'lib/types/app-context'
 
-export const upsertPriceRecord = async (price: Stripe.Price) => {
+export const upsertPriceRecord = async (
+  c: AppContext,
+  price: Stripe.Price,
+) => {
   // Create a properly typed object that matches the database schema
   const priceData: Database['public']['Tables']['prices']['Insert'] = {
     id: price.id,
@@ -24,7 +28,7 @@ export const upsertPriceRecord = async (price: Stripe.Price) => {
     metadata: price.metadata ?? null
   }
 
-  const { error } = await supabaseAdminClient
+  const { error } = await supabaseAdminClient(c)
     .from('prices')
     .upsert([priceData])
 
@@ -35,8 +39,11 @@ export const upsertPriceRecord = async (price: Stripe.Price) => {
   }
 }
 
-export const deletePriceRecord = async (price: Stripe.Price) => {
-  const { error } = await supabaseAdminClient
+export const deletePriceRecord = async (
+  c: AppContext,
+  price: Stripe.Price,
+) => {
+  const { error } = await supabaseAdminClient(c)
     .from('prices')
     .delete()
     .eq('id', price.id)

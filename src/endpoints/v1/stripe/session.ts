@@ -39,9 +39,10 @@ export class CreateCheckoutSession extends OpenAPIRoute {
 
   async handle(c: AppContext) {
     return ProtectedRoute(c, async (authToken: string, user: User) => {
+      const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
       const { priceId, quantity = 1, metadata = {} } = await c.req.json()
-      const customerId = await getOrCreateCustomer(user.id, user.email)
-      const session = await stripeClient.checkout.sessions.create({
+      const customerId = await getOrCreateCustomer(c, user.id, user.email)
+      const session = await stripe.checkout.sessions.create({
         customer: customerId,
         line_items: [
           {
@@ -54,8 +55,8 @@ export class CreateCheckoutSession extends OpenAPIRoute {
         subscription_data: {
           metadata
         },
-        success_url: process.env.CHECKOUT_SUCCESS_REDIRECT_URL,
-        cancel_url: process.env.CHECKOUT_CANCEL_REDIRECT_URL,
+        success_url: c.env.CHECKOUT_SUCCESS_REDIRECT_URL,
+        cancel_url: c.env.CHECKOUT_CANCEL_REDIRECT_URL,
       })
 
       return { sessionId: session.id }

@@ -1,8 +1,9 @@
+import { AppContext } from 'lib/types/app-context'
 import Stripe from 'stripe'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 
-export const upsertProductRecord = async (product: Stripe.Product) => {
-  const { error } = await supabaseAdminClient
+export const upsertProductRecord = async (c: AppContext, product: Stripe.Product) => {
+  const { error } = await supabaseAdminClient(c)
     .from('products')
     .upsert({
       id: product.id,
@@ -20,14 +21,14 @@ export const upsertProductRecord = async (product: Stripe.Product) => {
   }
 }
 
-export const deleteProductRecord = async (product: Stripe.Product) => {
-  const { error: priceDeleteError } = await supabaseAdminClient
+export const deleteProductRecord = async (c: AppContext, product: Stripe.Product) => {
+  const { error: priceDeleteError } = await supabaseAdminClient(c)
     .from('prices')
     .delete()
     .match({ product_id: product.id })
 
   if (!priceDeleteError) {
-    const { error: productDeleteError } = await supabaseAdminClient
+    const { error: productDeleteError } = await supabaseAdminClient(c)
       .from('products')
       .delete()
       .match({ id: product.id })
