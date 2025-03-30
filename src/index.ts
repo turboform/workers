@@ -1,6 +1,8 @@
+import { Hono } from "hono";
 import { fromHono } from "chanfana";
 import { StripeWebhooks } from 'endpoints/v1/stripe/webhooks';
-import { Hono } from "hono";
+import { CreatePortalLink } from 'endpoints/v1/stripe/portal-link'
+import { CreateCheckoutSession } from 'endpoints/v1/stripe/session'
 
 // Start a Hono app
 const app = new Hono();
@@ -11,6 +13,8 @@ const openapi = fromHono(app, {
 });
 
 openapi.post('/v1/stripe/webhooks', StripeWebhooks)
+openapi.post('/v1/stripe/portal-link', CreatePortalLink)
+openapi.post('/v1/stripe/session', CreateCheckoutSession)
 
 // Export the Hono app
 export default app;

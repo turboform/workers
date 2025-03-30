@@ -2,7 +2,7 @@ import { User } from '@supabase/supabase-js';
 import { supabaseAdminClient } from 'utils/clients/supabase/admin';
 import { AppContext } from 'lib/types/app-context';
 
-export async function ProtectedRoute<T>(
+export async function ProtectedRoute(
   context: AppContext,
   callback: (
     authToken: string,

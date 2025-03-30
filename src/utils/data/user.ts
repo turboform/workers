@@ -47,13 +47,20 @@ export const manageSubscriptionStatusChange = async (
 
   const { error } = await supabaseAdminClient
     .from('subscriptions')
-    .upsert({
+    .upsert([{
       id: subscription.id,
       user_id: uuid,
-      metadata: subscription.metadata,
-      status: subscription.status,
+      metadata: subscription.metadata || null,
+      status: subscription.status === 'active' || 
+              subscription.status === 'canceled' || 
+              subscription.status === 'incomplete' || 
+              subscription.status === 'incomplete_expired' || 
+              subscription.status === 'past_due' || 
+              subscription.status === 'unpaid' 
+                ? subscription.status 
+                : null,
       price_id: subscription.items.data[0].price.id,
-      quantity: (subscription as any).quantity,
+      quantity: subscription.items.data[0].quantity || null,
       cancel_at_period_end: subscription.cancel_at_period_end,
       cancel_at: subscription.cancel_at ? toDateTime(subscription.cancel_at) : null,
       canceled_at: subscription.canceled_at ? toDateTime(subscription.canceled_at) : null,
@@ -63,7 +70,7 @@ export const manageSubscriptionStatusChange = async (
       ended_at: subscription.ended_at ? toDateTime(subscription.ended_at) : null,
       trial_start: subscription.trial_start ? toDateTime(subscription.trial_start) : null,
       trial_end: subscription.trial_end ? toDateTime(subscription.trial_end) : null
-    })
+    }])
 
   if (error) {
     console.error(`An error occurred while saving subscription: ${error.message}`)
@@ -183,5 +190,6 @@ const copyBillingDetailsToCustomer = async (
 }
 
 const toDateTime = (secs: number) => {
-  return new Date(secs * 1000)
+  const date = new Date(secs * 1000)
+  return date.toISOString()
 }
