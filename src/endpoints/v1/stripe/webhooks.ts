@@ -14,16 +14,6 @@ export const config = {
   }
 }
 
-async function buffer(readable) {
-  const chunks = []
-  for await (const chunk of readable) {
-    chunks.push(
-      typeof chunk === "string" ? Buffer.from(chunk) : chunk
-    )
-  }
-  return Buffer.concat(chunks)
-}
-
 const relevantEvents = new Set([
   'product.created',
   'product.updated',
@@ -73,97 +63,63 @@ export class StripeWebhooks extends OpenAPIRoute {
   };
 
   async handle(c: AppContext) {
-    const buf = await buffer(c.req)
+    const buf = await c.req.text()
     const signature = c.req.header('stripe-signature')
     const webhookSecret = c.env.STRIPE_WEBHOOK_SECRET_LIVE
 
-    let event: any
-
-    try {
-      const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
-      event = stripe.webhooks.constructEvent(buf, signature, webhookSecret)
-      console.log(`Event received: ${event.type}`)
-    } catch (err) {
-      console.error(`Error message: ${err.message}`)
-      return {
-        success: false,
-        statusCode: 400,
-        error: {
-          type: 'webhook_error',
-          message: 'Webhook Error: cannot construct Stripe event. Check logs for more info.',
-        }
-      }
-    }
+    const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
+    const event = await stripe.webhooks.constructEventAsync(buf, signature, webhookSecret) as any
+    console.log(`Event received: ${event.type}`)
 
     if (relevantEvents.has(event.type)) {
-      try {
-        switch (event.type) {
-          case 'product.created':
-          case 'product.updated':
-            await upsertProductRecord(c, event.data.object)
-            break
-          case 'product.deleted':
-            await deleteProductRecord(c, event.data.object)
-            break
-          case 'price.created':
-          case 'price.updated':
-            await upsertPriceRecord(c, event.data.object)
-            break
-          case 'price.deleted':
-            await deletePriceRecord(c, event.data.object)
-            break
-          case 'customer.subscription.created':
-          case 'customer.subscription.updated':
-          case 'customer.subscription.deleted':
-            await manageSubscriptionStatusChange(c,
-              event.data.object.id,
-              event.data.object.customer,
-              event.type === 'customer.subscription.created'
-            )
-            break
-          case 'checkout.session.completed':
-            const checkoutSession = event.data.object
-            if (checkoutSession.mode === 'subscription') {
-              await manageSubscriptionStatusChange(
-                c,
-                checkoutSession.subscription,
-                checkoutSession.customer,
-                true
-              )
-            }
-            break
-          case 'customer.updated':
-            await updateStripeUserDetails(
+      switch (event.type) {
+        case 'product.created':
+        case 'product.updated':
+          await upsertProductRecord(c, event.data.object)
+          break
+        case 'product.deleted':
+          await deleteProductRecord(c, event.data.object)
+          break
+        case 'price.created':
+        case 'price.updated':
+          await upsertPriceRecord(c, event.data.object)
+          break
+        case 'price.deleted':
+          await deletePriceRecord(c, event.data.object)
+          break
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted':
+          await manageSubscriptionStatusChange(c,
+            event.data.object.id,
+            event.data.object.customer,
+            event.type === 'customer.subscription.created'
+          )
+          break
+        case 'checkout.session.completed':
+          const checkoutSession = event.data.object
+          if (checkoutSession.mode === 'subscription') {
+            await manageSubscriptionStatusChange(
               c,
-              event.data.object.id,
-              event.data.object.address,
-              event.data.object.invoice_settings?.default_payment_method,
+              checkoutSession.subscription,
+              checkoutSession.customer,
+              true
             )
-            break
-          case 'customer.deleted':
-            await deleteCustomer(c, event.data.object.id)
-            break
-          default:
-            console.error('Unknown event type to process.')
-            return {
-              success: false,
-              statusCode: 400,
-              error: {
-                type: 'unknown_event_type',
-                message: 'Unknown event type to process.',
-              }
-            }
-        }
-      } catch (error) {
-        console.error(error)
-        return {
-          success: false,
-          statusCode: 400,
-          error: {
-            type: 'failed_to_handle_webhook',
-            message: 'Failed to handle webhook. Check the logs for more info.',
           }
-        }
+          break
+        case 'customer.updated':
+          await updateStripeUserDetails(
+            c,
+            event.data.object.id,
+            event.data.object.address,
+            event.data.object.invoice_settings?.default_payment_method,
+          )
+          break
+        case 'customer.deleted':
+          await deleteCustomer(c, event.data.object.id)
+          break
+        default:
+          throw new Error(`Unknown event type: ${event.type}`)
       }
     }
 
