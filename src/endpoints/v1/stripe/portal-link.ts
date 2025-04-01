@@ -36,7 +36,7 @@ export class CreatePortalLink extends OpenAPIRoute {
   async handle(c: AppContext) {
     return ProtectedRoute(c, async (authToken: string, user: User) => {
       const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
-      const customerId = await getOrCreateCustomer(user.id, user.email)
+      const customerId = await getOrCreateCustomer(c, user.id, user.email)
       const { url } = await stripe.billingPortal.sessions.create({
         customer: customerId,
         return_url: c.env.STRIPE_SESSION_REDIRECT_URL,
