@@ -1,16 +1,13 @@
-import { User } from '@supabase/supabase-js';
-import { supabaseAdminClient } from 'utils/clients/supabase/admin';
-import { AppContext } from 'lib/types/app-context';
+import { User } from '@supabase/supabase-js'
+import { supabaseAdminClient } from 'utils/clients/supabase/admin'
+import { AppContext } from 'lib/types/app-context'
 
 export async function ProtectedRoute(
   context: AppContext,
-  callback: (
-    authToken: string,
-    user: User,
-  ) => Promise<object>,
+  callback: (authToken: string, user: User) => Promise<object>
 ) {
   try {
-    const authHeader = context.req.header('Authorization');
+    const authHeader = context.req.header('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return {
         success: false,
@@ -18,11 +15,11 @@ export async function ProtectedRoute(
         error: {
           type: 'unauthorized',
           message: 'Invalid authorization header.',
-        }
+        },
       }
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace('Bearer ', '')
     const { data, error } = await supabaseAdminClient(context).auth.getUser(token)
     if (error || !data) {
       return {
@@ -31,21 +28,20 @@ export async function ProtectedRoute(
         error: {
           type: 'unauthorized',
           message: 'Unauthorized.',
-        }
+        },
       }
     }
 
     const response = await callback(token, data.user!)
     return response
-  }
-  catch (error) {
+  } catch (error) {
     return {
       success: false,
       statusCode: 500,
       error: {
         type: 'internal_server_error',
         message: 'Internal server error.',
-      }
+      },
     }
   }
 }

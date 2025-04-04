@@ -8,34 +8,34 @@ import { User } from '@supabase/supabase-js'
 
 export class CreateCheckoutSession extends OpenAPIRoute {
   schema = {
-    tags: ["Stripe"],
-    summary: "Create Checkout Session",
+    tags: ['Stripe'],
+    summary: 'Create Checkout Session',
     request: {
       body: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: z.object({
-              priceId: Str({ description: "Price ID" }),
-              quantity: Int({ description: "Quantity" }),
+              priceId: Str({ description: 'Price ID' }),
+              quantity: Int({ description: 'Quantity' }),
               metadata: z.record(z.string(), z.string()).optional(),
             }),
           },
         },
       },
       responses: {
-        "200": {
-          description: "Checkout session created successfully",
+        '200': {
+          description: 'Checkout session created successfully',
           content: {
-            "application/json": {
+            'application/json': {
               schema: z.object({
-                sessionId: Str({ description: "Checkout session ID" }),
+                sessionId: Str({ description: 'Checkout session ID' }),
               }),
             },
           },
         },
       },
     },
-  };
+  }
 
   async handle(c: AppContext) {
     return ProtectedRoute(c, async (authToken: string, user: User) => {
@@ -47,13 +47,13 @@ export class CreateCheckoutSession extends OpenAPIRoute {
         line_items: [
           {
             price: priceId,
-            quantity
-          }
+            quantity,
+          },
         ],
         mode: 'subscription',
         allow_promotion_codes: true,
         subscription_data: {
-          metadata
+          metadata,
         },
         success_url: c.env.CHECKOUT_SUCCESS_REDIRECT_URL,
         cancel_url: c.env.CHECKOUT_CANCEL_REDIRECT_URL,

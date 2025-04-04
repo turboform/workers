@@ -3,15 +3,15 @@ import { upsertProductRecord, deleteProductRecord } from 'utils/data/product'
 import { manageSubscriptionStatusChange, updateStripeUserDetails } from 'utils/data/user'
 import { deleteCustomer } from 'utils/data/customer'
 import { AppContext } from 'lib/types/app-context'
-import { z } from "zod";
-import { Bool, OpenAPIRoute, Str } from "chanfana";
+import { z } from 'zod'
+import { Bool, OpenAPIRoute, Str } from 'chanfana'
 import { stripeClient } from 'utils/clients/stripe'
 
 // Stripe requires the raw body to construct the event.
 export const config = {
   api: {
-    bodyParser: false
-  }
+    bodyParser: false,
+  },
 }
 
 const relevantEvents = new Set([
@@ -26,33 +26,33 @@ const relevantEvents = new Set([
   'customer.updated',
   'customer.subscription.created',
   'customer.subscription.updated',
-  'customer.subscription.deleted'
+  'customer.subscription.deleted',
 ])
 
 export class StripeWebhooks extends OpenAPIRoute {
   schema = {
-    tags: ["Stripe"],
-    summary: "Stripe Webhooks",
+    tags: ['Stripe'],
+    summary: 'Stripe Webhooks',
     // Properly define the request structure expected by OpenAPIRoute
     request: {
       // For webhooks, typically we process the raw body, but we can define headers
       headers: z.object({
-        'stripe-signature': Str({ description: "Stripe signature header" })
+        'stripe-signature': Str({ description: 'Stripe signature header' }),
       }),
       // Body schema can be defined loosely as we'll process the raw body
       body: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: z.object({}).passthrough(), // Allow any JSON body
-          }
-        }
-      }
+          },
+        },
+      },
     },
     responses: {
-      "200": {
-        description: "Webhook processed successfully",
+      '200': {
+        description: 'Webhook processed successfully',
         content: {
-          "application/json": {
+          'application/json': {
             schema: z.object({
               received: Bool(),
             }),
@@ -60,7 +60,7 @@ export class StripeWebhooks extends OpenAPIRoute {
         },
       },
     },
-  };
+  }
 
   async handle(c: AppContext) {
     const buf = await c.req.text()
@@ -68,7 +68,7 @@ export class StripeWebhooks extends OpenAPIRoute {
     const webhookSecret = c.env.STRIPE_WEBHOOK_SECRET_LIVE
 
     const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
-    const event = await stripe.webhooks.constructEventAsync(buf, signature, webhookSecret) as any
+    const event = (await stripe.webhooks.constructEventAsync(buf, signature, webhookSecret)) as any
     console.log(`Event received: ${event.type}`)
 
     if (relevantEvents.has(event.type)) {
@@ -90,7 +90,8 @@ export class StripeWebhooks extends OpenAPIRoute {
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted':
-          await manageSubscriptionStatusChange(c,
+          await manageSubscriptionStatusChange(
+            c,
             event.data.object.id,
             event.data.object.customer,
             event.type === 'customer.subscription.created'
@@ -99,12 +100,7 @@ export class StripeWebhooks extends OpenAPIRoute {
         case 'checkout.session.completed':
           const checkoutSession = event.data.object
           if (checkoutSession.mode === 'subscription') {
-            await manageSubscriptionStatusChange(
-              c,
-              checkoutSession.subscription,
-              checkoutSession.customer,
-              true
-            )
+            await manageSubscriptionStatusChange(c, checkoutSession.subscription, checkoutSession.customer, true)
           }
           break
         case 'customer.updated':
@@ -112,7 +108,7 @@ export class StripeWebhooks extends OpenAPIRoute {
             c,
             event.data.object.id,
             event.data.object.address,
-            event.data.object.invoice_settings?.default_payment_method,
+            event.data.object.invoice_settings?.default_payment_method
           )
           break
         case 'customer.deleted':
@@ -128,7 +124,7 @@ export class StripeWebhooks extends OpenAPIRoute {
       statusCode: 200,
       data: {
         received: true,
-      }
+      },
     }
   }
 }

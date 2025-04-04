@@ -11,7 +11,7 @@ export const upsertProductRecord = async (c: AppContext, product: Stripe.Product
       name: product.name,
       description: product.description,
       image: product.images?.[0] ?? null,
-      metadata: product.metadata
+      metadata: product.metadata,
     })
 
   if (error) {

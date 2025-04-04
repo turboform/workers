@@ -8,29 +8,29 @@ import { User } from '@supabase/supabase-js'
 
 export class CreatePortalLink extends OpenAPIRoute {
   schema = {
-    tags: ["Stripe"],
-    summary: "Create Billing Portal Link",
+    tags: ['Stripe'],
+    summary: 'Create Billing Portal Link',
     request: {
       body: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: z.object({}),
           },
         },
       },
       responses: {
-        "200": {
-          description: "Billing portal link created successfully",
+        '200': {
+          description: 'Billing portal link created successfully',
           content: {
-            "application/json": {
+            'application/json': {
               schema: z.object({
-                url: Str({ description: "Billing portal URL" }),
+                url: Str({ description: 'Billing portal URL' }),
               }),
             },
           },
         },
       },
-    }
+    },
   }
 
   async handle(c: AppContext) {
