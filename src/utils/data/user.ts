@@ -72,8 +72,6 @@ export const manageSubscriptionStatusChange = async (
         current_period_end: toDateTime(subscription.current_period_end),
         created: toDateTime(subscription.created),
         ended_at: subscription.ended_at ? toDateTime(subscription.ended_at) : null,
-        trial_start: subscription.trial_start ? toDateTime(subscription.trial_start) : null,
-        trial_end: subscription.trial_end ? toDateTime(subscription.trial_end) : null,
       },
     ])
 
