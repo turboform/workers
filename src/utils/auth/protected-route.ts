@@ -35,6 +35,7 @@ export async function ProtectedRoute(
     const response = await callback(token, data.user!)
     return response
   } catch (error) {
+    console.error('Error in protected route:', error)
     return {
       success: false,
       statusCode: 500,
