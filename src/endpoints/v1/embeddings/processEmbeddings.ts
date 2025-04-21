@@ -115,6 +115,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
                 .eq('id', job.id)
 
               if (updateError) {
+                console.error('Failed to update form response:', updateError)
                 throw new Error(`Failed to update form response: ${updateError.message}`)
               }
 
