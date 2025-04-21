@@ -7,7 +7,7 @@
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "cf-typegen": "wrangler types",
-    "migrate-db": "supabase migration up --linked",
+    "migrate-db": "npx supabase migration up --linked",
     "gen-db-types": "npx supabase gen types typescript --project-id krleqnhlvnyqtkqoyogw --schema public > src/lib/types/database.types.ts"
   },
   "dependencies": {

@@ -1,0 +1,90 @@
+-- Add embedding column to form_responses table
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS embedding vector(1536);
+
+-- Create IVFFlat index for vector search (works with high dimensions)
+CREATE INDEX IF NOT EXISTS form_responses_embedding_idx ON form_responses USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- Create embedding job queue (using pgmq)
+SELECT pgmq.create('form_response_embeddings');
+
+-- Create function to convert form response to text for embedding
+CREATE OR REPLACE FUNCTION form_response_to_text(response_data jsonb)
+RETURNS text
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  key_value text;
+  result text := '';
+BEGIN
+  FOR key_value IN SELECT key || ': ' || 
+                   CASE 
+                     WHEN jsonb_typeof(value) IN ('object', 'array') THEN jsonb_pretty(value)
+                     ELSE value #>> '{}'
+                   END
+                   FROM jsonb_each(response_data)
+  LOOP
+    result := result || key_value || E'\n';
+  END LOOP;
+  
+  RETURN result;
+END;
+$$;
+
+-- Create function to queue a form response for embedding
+CREATE OR REPLACE FUNCTION queue_form_response_embedding()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Queue the form response for embedding processing
+  PERFORM pgmq.send(
+    'form_response_embeddings',
+    jsonb_build_object(
+      'id', NEW.id,
+      'text', form_response_to_text(NEW.responses)
+    )
+  );
+  
+  -- Set embedding to NULL to indicate it needs processing
+  IF TG_OP = 'UPDATE' AND OLD.responses IS DISTINCT FROM NEW.responses THEN
+    NEW.embedding = NULL;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+-- Create trigger to queue embeddings when form_responses are inserted or updated
+DROP TRIGGER IF EXISTS queue_form_response_embedding_insert ON form_responses;
+CREATE TRIGGER queue_form_response_embedding_insert
+AFTER INSERT ON form_responses
+FOR EACH ROW
+EXECUTE FUNCTION queue_form_response_embedding();
+
+DROP TRIGGER IF EXISTS queue_form_response_embedding_update ON form_responses;
+CREATE TRIGGER queue_form_response_embedding_update
+BEFORE UPDATE OF responses ON form_responses
+FOR EACH ROW
+WHEN (OLD.responses IS DISTINCT FROM NEW.responses)
+EXECUTE FUNCTION queue_form_response_embedding();
+
+-- Create scheduled job to process embedding queue with the worker endpoint
+SELECT cron.schedule(
+  'process-form-response-embeddings',
+  '*/5 * * * *',  -- Run every 5 minutes
+  $$
+  SELECT pg_net.http_post(
+    'https://internal-workers-prd.turboform.ai/v1/embeddings/process',
+    '{"max_batch_size": 20}',
+    'application/json',
+    60
+  )
+  $$
+);
+
+-- Grant permissions
+GRANT USAGE ON SCHEMA pgmq TO service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA pgmq TO service_role;
+GRANT USAGE ON SCHEMA cron TO service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA cron TO service_role;
