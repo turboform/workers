@@ -107,7 +107,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
               const job = EmbeddingJobSchema.parse(msg.message_data)
 
               // Generate embedding
-              console.log('Generating embedding for form response:', job.text
+              console.log('Generating embedding for form response:', job.text)
               const embedding = await generateOpenAIEmbedding(c, job.text)
 
               // Update the form response with the embedding
