@@ -4,6 +4,7 @@ import { StripeWebhooks } from 'endpoints/v1/stripe/webhooks'
 import { CreatePortalLink } from 'endpoints/v1/stripe/portal-link'
 import { CreateCheckoutSession } from 'endpoints/v1/stripe/session'
 import { GetUserDetails } from 'endpoints/v1/user/getUserDetails'
+import { ProcessEmbeddings } from 'endpoints/v1/embeddings/processEmbeddings'
 
 // Start a Hono app
 const app = new Hono()
@@ -18,6 +19,9 @@ openapi.post('/v1/stripe/portal-link', CreatePortalLink)
 openapi.post('/v1/stripe/session', CreateCheckoutSession)
 
 openapi.get('/v1/user', GetUserDetails)
+
+// Embedding endpoints
+openapi.post('/v1/embeddings/process', ProcessEmbeddings)
 
 // Export the Hono app
 export default app
