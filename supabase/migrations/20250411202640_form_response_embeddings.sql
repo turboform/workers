@@ -1,8 +1,11 @@
 -- Add embedding column to form_responses table
 ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS embedding vector(1536);
 
--- Create IVFFlat index for vector search (works with high dimensions)
-CREATE INDEX IF NOT EXISTS form_responses_embedding_idx ON form_responses USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+-- Create HNSW index for vector search (better for high dimensions)
+CREATE INDEX IF NOT EXISTS form_responses_embedding_idx 
+  ON form_responses 
+  USING hnsw (embedding vector_cosine_ops) 
+  WITH (m = 16, ef_construction = 64);
 
 -- Create embedding job queue (using pgmq)
 SELECT pgmq.create('form_response_embeddings');
@@ -74,12 +77,11 @@ SELECT cron.schedule(
   'process-form-response-embeddings',
   '*/5 * * * *',  -- Run every 5 minutes
   $$
-  SELECT pg_net.http_post(
-    'https://internal-workers-prd.turboform.ai/v1/embeddings/process',
-    '{"max_batch_size": 20}',
-    'application/json',
-    60
-  )
+  SELECT net.http_post(
+    url := 'https://internal-workers-prd.turboform.ai/v1/embeddings/process',
+    body := '{"max_batch_size": 20}'::jsonb,
+    timeout_milliseconds := 60000
+  );
   $$
 );
 
@@ -88,3 +90,4 @@ GRANT USAGE ON SCHEMA pgmq TO service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA pgmq TO service_role;
 GRANT USAGE ON SCHEMA cron TO service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA cron TO service_role;
+GRANT EXECUTE ON FUNCTION net.http_post TO service_role;

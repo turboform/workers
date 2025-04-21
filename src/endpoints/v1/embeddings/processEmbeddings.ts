@@ -60,6 +60,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
     return ProtectedRoute(c, async () => {
       try {
         // Parse request
+        console.log('Processing embeddings...')
         const body = await c.req.json()
         const { max_batch_size } = ProcessRequestSchema.parse(body)
 
