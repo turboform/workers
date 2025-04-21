@@ -73,6 +73,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
           visibility_timeout: 120, // 2 minutes
         })
 
+        console.log('Read', queueMessages?.length, 'messages from the queue')
         if (queueError) {
           throw new Error(`Failed to read from queue: ${queueError.message}`)
         }
@@ -106,6 +107,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
               const job = EmbeddingJobSchema.parse(msg.message_data)
 
               // Generate embedding
+              console.log('Generating embedding for form response:', job.text
               const embedding = await generateOpenAIEmbedding(c, job.text)
 
               // Update the form response with the embedding
