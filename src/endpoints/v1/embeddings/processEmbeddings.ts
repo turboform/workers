@@ -103,9 +103,13 @@ export class ProcessEmbeddings extends OpenAPIRoute {
       // Process each message in parallel
       await Promise.all(
         queueMessages.map(async (msg) => {
+          console.log('Processing message:', msg.msg_id)
+          console.log('Message data:', msg.message_data)
+
           try {
             // Parse the message data
             const job = EmbeddingJobSchema.parse(msg.message_data)
+            console.log('Processing embedding for form response:', job.id)
 
             // Generate embedding
             console.log('Generating embedding for form response:', job.text)
