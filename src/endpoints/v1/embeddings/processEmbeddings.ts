@@ -67,7 +67,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
       const supabase = supabaseAdminClient(c)
 
       // Read messages from the queue
-      const { data: queueMessages, error: queueError } = await supabase.rpc('pgmq_read', {
+      const { data: queueMessages, error: queueError } = await supabase.schema('pgmq_public').rpc('read', {
         queue_name: 'form_response_embeddings',
         max_count: max_batch_size,
         visibility_timeout: 120, // 2 minutes
