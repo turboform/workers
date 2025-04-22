@@ -190,6 +190,7 @@ async function generateOpenAIEmbedding(c: AppContext, text: string): Promise<num
     apiKey: c.env.OPENAI_API_KEY,
   })
 
+  console.log('Generating embedding for text:', text)
   const response = await openai.embeddings.create({
     model: 'text-embedding-3-small',
     input: text,
