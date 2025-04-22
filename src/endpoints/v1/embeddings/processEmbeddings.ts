@@ -116,8 +116,11 @@ export class ProcessEmbeddings extends OpenAPIRoute {
             const embedding = await generateOpenAIEmbedding(c, job.text)
 
             // Update the form response with the embedding
-            console.log('Updating form response with embedding')
-            const { error: updateError } = await supabase.from('form_responses').update({ embedding }).eq('id', job.id)
+            console.log('Updating form response with embedding', job.id)
+            const { data, error: updateError } = await supabase.from('form_responses').update({ embedding }).eq('id', job.id)
+
+            console.log('Updated form response with embedding', data)
+            console.log('Update error:', updateError)
 
             if (updateError) {
               console.error('Failed to update form response:', updateError)
@@ -193,6 +196,7 @@ async function generateOpenAIEmbedding(c: AppContext, text: string): Promise<num
     encoding_format: 'float',
   })
 
+  console.log('Generated embedding:', response)
   const embedding = response.data[0].embedding
 
   if (!embedding) {
