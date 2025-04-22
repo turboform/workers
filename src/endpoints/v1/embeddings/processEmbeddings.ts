@@ -156,6 +156,9 @@ export class ProcessEmbeddings extends OpenAPIRoute {
             message_id: msgId,
           })
 
+          if (deleteError) {
+            console.error('Failed to delete message:', deleteError)
+          }
         })
       }
 
