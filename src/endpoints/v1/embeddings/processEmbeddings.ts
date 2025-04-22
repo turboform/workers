@@ -79,6 +79,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
       }
 
       console.log('Read', queueMessages?.length, 'messages from the queue')
+      console.log('Queue messages:', JSON.stringify(queueMessages))
       if (!queueMessages || queueMessages.length === 0) {
         console.log('No messages found in the queue')
         return c.json({
@@ -103,8 +104,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
       // Process each message in parallel
       await Promise.all(
         queueMessages.map(async (msg) => {
-          console.log('Processing message:', msg.msg_id)
-          console.log('Message data:', msg.message_data)
+          console.log('Processing message:', JSON.stringify(msg))
 
           try {
             // Parse the message data
