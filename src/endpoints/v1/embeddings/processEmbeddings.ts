@@ -117,7 +117,10 @@ export class ProcessEmbeddings extends OpenAPIRoute {
 
             // Update the form response with the embedding
             console.log('Updating form response with embedding', job.id)
-            const { data, error: updateError } = await supabase.from('form_responses').update({ embedding }).eq('id', job.id)
+            const { data, error: updateError } = await supabase
+              .from('form_responses')
+              .update({ embedding })
+              .eq('id', job.id)
 
             console.log('Updated form response with embedding', data)
             console.log('Update error:', updateError)
