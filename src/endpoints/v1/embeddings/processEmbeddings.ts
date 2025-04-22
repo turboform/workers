@@ -70,7 +70,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
       const { data: queueMessages, error: queueError } = await supabase.schema('pgmq_public').rpc('read', {
         queue_name: 'form_response_embeddings',
         n: max_batch_size,
-        visibility_timeout: 120, // 2 minutes
+        sleep_seconds: 120, // 2 minutes
       })
 
       if (queueError) {
