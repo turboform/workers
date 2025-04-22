@@ -1,6 +1,7 @@
 import { User } from '@supabase/supabase-js'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { AppContext } from 'lib/types/app-context'
+import { HTTPException } from 'hono/http-exception'
 
 export async function ProtectedRoute(
   context: AppContext,
@@ -9,40 +10,19 @@ export async function ProtectedRoute(
   try {
     const authHeader = context.req.header('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return {
-        success: false,
-        statusCode: 401,
-        error: {
-          type: 'unauthorized',
-          message: 'Invalid authorization header.',
-        },
-      }
+      throw new HTTPException(401, { message: 'Invalid authorization header.' })
     }
 
     const token = authHeader.replace('Bearer ', '')
     const { data, error } = await supabaseAdminClient(context).auth.getUser(token)
     if (error || !data) {
-      return {
-        success: false,
-        statusCode: 401,
-        error: {
-          type: 'unauthorized',
-          message: 'Unauthorized.',
-        },
-      }
+      throw new HTTPException(401, { message: 'Unauthorized.' })
     }
 
     const response = await callback(token, data.user!)
     return response
   } catch (error) {
     console.error('Error in protected route:', error)
-    return {
-      success: false,
-      statusCode: 500,
-      error: {
-        type: 'internal_server_error',
-        message: 'Internal server error.',
-      },
-    }
+    throw new HTTPException(500, { message: 'Internal server error.' })
   }
 }

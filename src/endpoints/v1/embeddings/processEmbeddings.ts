@@ -73,11 +73,12 @@ export class ProcessEmbeddings extends OpenAPIRoute {
         visibility_timeout: 120, // 2 minutes
       })
 
-      console.log('Read', queueMessages?.length, 'messages from the queue')
       if (queueError) {
+        console.error('Failed to read from queue:', queueError)
         throw new Error(`Failed to read from queue: ${queueError.message}`)
       }
 
+      console.log('Read', queueMessages?.length, 'messages from the queue')
       if (!queueMessages || queueMessages.length === 0) {
         console.log('No messages found in the queue')
         return c.json({
