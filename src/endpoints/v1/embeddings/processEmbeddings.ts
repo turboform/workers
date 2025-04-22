@@ -108,7 +108,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
 
           try {
             // Parse the message data
-            const job = EmbeddingJobSchema.parse(msg.message_data)
+            const job = EmbeddingJobSchema.parse(msg.message)
             console.log('Processing embedding for form response:', job.id)
 
             // Generate embedding
@@ -116,6 +116,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
             const embedding = await generateOpenAIEmbedding(c, job.text)
 
             // Update the form response with the embedding
+            console.log('Updating form response with embedding')
             const { error: updateError } = await supabase.from('form_responses').update({ embedding }).eq('id', job.id)
 
             if (updateError) {
@@ -148,9 +149,13 @@ export class ProcessEmbeddings extends OpenAPIRoute {
 
       // Delete successfully processed messages in a single operation
       if (processedMsgIds.length > 0) {
-        await supabase.rpc('pgmq_delete_many', {
-          queue_name: 'form_response_embeddings',
-          msg_ids: processedMsgIds,
+        processedMsgIds.forEach(async (msgId) => {
+          console.log('Deleting message ', msgId, ' from the queue')
+          const { error: deleteError } = await supabase.rpc('pgmq_public.delete', {
+            queue_name: 'form_response_embeddings',
+            message_id: msgId,
+          })
+
         })
       }
 
