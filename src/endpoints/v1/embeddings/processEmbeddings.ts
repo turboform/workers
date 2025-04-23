@@ -1,7 +1,6 @@
 import { OpenAPIRoute } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
-import { ProtectedRoute } from 'utils/auth/protected-route'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import OpenAI from 'openai'
 
@@ -23,13 +22,15 @@ export class ProcessEmbeddings extends OpenAPIRoute {
   schema = {
     tags: ['Embeddings'],
     summary: 'Process form response embeddings from the queue',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: ProcessRequestSchema,
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: ProcessRequestSchema,
+          },
         },
+        required: false,
       },
-      required: false,
     },
     responses: {
       '200': {
@@ -50,9 +51,6 @@ export class ProcessEmbeddings extends OpenAPIRoute {
           },
         },
       },
-      '500': {
-        description: 'Server error',
-      },
     },
   }
 
@@ -67,7 +65,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
       const supabase = supabaseAdminClient(c)
 
       // Read messages from the queue
-      const { data: queueMessages, error: queueError } = await supabase.schema('pgmq_public').rpc('read', {
+      const { data: queueMessages, error: queueError } = await supabase.schema('pgmq_public' as any).rpc('read', {
         queue_name: 'form_response_embeddings',
         n: max_batch_size,
         sleep_seconds: 120, // 2 minutes
@@ -114,7 +112,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
             // Update the form response with the embedding
             const { error: updateError } = await supabase
               .from('form_responses')
-              .update({ embedding })
+              .update({ embedding: embedding as any })
               .eq('id', job.id)
 
             if (updateError) {
@@ -149,7 +147,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
       if (processedMsgIds.length > 0) {
         console.log(`Deleting ${processedMsgIds.length} processed messages from the queue`)
         processedMsgIds.forEach(async (msgId) => {
-          const { error: deleteError } = await supabase.rpc('pgmq_public.delete', {
+          const { error: deleteError } = await supabase.schema('pgmq_public' as any).rpc('delete', {
             queue_name: 'form_response_embeddings',
             message_id: msgId,
           })
