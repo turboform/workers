@@ -1,13 +1,13 @@
 -- Create a function for vector similarity search within form responses
 CREATE OR REPLACE FUNCTION match_form_responses_by_embedding(
-  query_embedding vector(3072),
+  query_embedding vector(1536),
   similarity_threshold float,
   match_count int,
   p_form_id uuid
 )
 RETURNS TABLE (
   id uuid,
-  content jsonb,
+  responses jsonb,
   form_id uuid,
   created_at timestamptz,
   similarity float
@@ -18,7 +18,7 @@ BEGIN
   RETURN QUERY
   SELECT
     fr.id,
-    fr.content,
+    fr.responses,
     fr.form_id,
     fr.created_at,
     -1 * (fr.embedding <#> query_embedding) AS similarity
@@ -27,7 +27,7 @@ BEGIN
   WHERE
     fr.form_id = p_form_id
     AND fr.embedding IS NOT NULL
-    AND (fr.embedding <#> query_embedding) < -similarity_threshold
+    AND fr.embedding <#> query_embedding < -similarity_threshold
   ORDER BY
     fr.embedding <#> query_embedding
   LIMIT match_count;

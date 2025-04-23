@@ -264,6 +264,21 @@ export type Database = {
         Args: { response_data: Json }
         Returns: string
       }
+      match_form_responses_by_embedding: {
+        Args: {
+          query_embedding: string
+          similarity_threshold: number
+          match_count: number
+          p_form_id: string
+        }
+        Returns: {
+          id: string
+          responses: Json
+          form_id: string
+          created_at: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       pricing_plan_interval: 'month' | 'year'
