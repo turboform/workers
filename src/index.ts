@@ -5,6 +5,7 @@ import { CreatePortalLink } from 'endpoints/v1/stripe/portal-link'
 import { CreateCheckoutSession } from 'endpoints/v1/stripe/session'
 import { GetUserDetails } from 'endpoints/v1/user/getUserDetails'
 import { ProcessEmbeddings } from 'endpoints/v1/embeddings/processEmbeddings'
+import { QuestionAnswering } from 'endpoints/v1/embeddings/questionAnswering'
 
 // Start a Hono app
 const app = new Hono()
@@ -22,6 +23,7 @@ openapi.get('/v1/user', GetUserDetails)
 
 // Embedding endpoints
 openapi.post('/v1/embeddings/process', ProcessEmbeddings)
+openapi.post('/v1/embeddings/question', QuestionAnswering)
 
 // Export the Hono app
 export default app

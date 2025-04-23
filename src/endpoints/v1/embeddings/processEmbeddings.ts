@@ -2,7 +2,7 @@ import { OpenAPIRoute } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
-import OpenAI from 'openai'
+import { openAIClient } from 'utils/clients/openai'
 
 // Default batch size for processing
 const DEFAULT_BATCH_SIZE = 20
@@ -179,10 +179,9 @@ export class ProcessEmbeddings extends OpenAPIRoute {
  * Generates an embedding using OpenAI's text-embedding-3-small model
  */
 async function generateOpenAIEmbedding(c: AppContext, text: string): Promise<number[]> {
-  const openai = new OpenAI({
-    apiKey: c.env.OPENAI_API_KEY,
-  })
+  const openai = openAIClient(c.env.OPENAI_API_KEY)
 
+  console.log('Generating embedding for:', text)
   const response = await openai.embeddings.create({
     model: 'text-embedding-3-small',
     input: text,
