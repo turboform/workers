@@ -11,6 +11,26 @@
   "observability": {
     "enabled": true,
   },
+  "env": {
+    "dev": {
+      "workers_dev": true,
+      "vars": {
+        "SUPABASE_URL": "https://wmghucwmjnbqpsujncee.supabase.co",
+        "STRIPE_SESSION_REDIRECT_URL": "http://localhost:3000/account",
+        "CHECKOUT_SUCCESS_REDIRECT_URL": "http://localhost:3000/account",
+        "CHECKOUT_CANCEL_REDIRECT_URL": "http://localhost:3000/account",
+      },
+    },
+    "prd": {
+      "route": "https://internal-workers-prd.turboform.ai",
+      "vars": {
+        "SUPABASE_URL": "https://krleqnhlvnyqtkqoyogw.supabase.co",
+        "STRIPE_SESSION_REDIRECT_URL": "https://turboform.ai/account",
+        "CHECKOUT_SUCCESS_REDIRECT_URL": "https://turboform.ai/account",
+        "CHECKOUT_CANCEL_REDIRECT_URL": "https://turboform.ai/account",
+      },
+    },
+  },
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

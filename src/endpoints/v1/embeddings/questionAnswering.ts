@@ -53,6 +53,11 @@ export class QuestionAnswering extends OpenAPIRoute {
         const body = await c.req.json()
         const { question, formId, limit, threshold } = body
 
+        console.log('question', question)
+        console.log('formId', formId)
+        console.log('limit', limit)
+        console.log('threshold', threshold)
+
         // Generate embedding for the question
         const questionEmbedding = await generateOpenAIEmbedding(c, question)
 
@@ -69,6 +74,8 @@ export class QuestionAnswering extends OpenAPIRoute {
             p_form_id: formId,
           }
         )
+
+        console.log('relevantResponses', relevantResponses)
 
         if (searchError) {
           console.error('Vector similarity search failed:', searchError)

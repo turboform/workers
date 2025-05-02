@@ -48,12 +48,10 @@ export class SubmitFormResponse extends OpenAPIRoute {
 
       // Check if the form exists and is not a draft
       // TODO: check form expiration date
-      const { error } = await supabaseAdminClient(c)
-        .from('form_responses')
-        .insert({
-          form_id: formId,
-          responses,
-        })
+      const { error } = await supabaseAdminClient(c).from('form_responses').insert({
+        form_id: formId,
+        responses,
+      })
 
       if (error) {
         console.error('Error submitting form response:', error)
