@@ -11,23 +11,50 @@ CREATE INDEX IF NOT EXISTS form_responses_embedding_idx
 SELECT pgmq.create('form_response_embeddings');
 
 -- Create function to convert form response to text for embedding
-CREATE OR REPLACE FUNCTION form_response_to_text(response_data jsonb)
+CREATE OR REPLACE FUNCTION form_response_to_text(response_data jsonb, form_id uuid)
 RETURNS text
 LANGUAGE plpgsql
-IMMUTABLE
+STABLE
 AS $$
 DECLARE
-  key_value text;
+  form_schema jsonb;
+  question_id text;
+  response_value text;
+  question_label text;
+  i integer;
   result text := '';
 BEGIN
-  FOR key_value IN SELECT key || ': ' || 
-                   CASE 
-                     WHEN jsonb_typeof(value) IN ('object', 'array') THEN jsonb_pretty(value)
-                     ELSE value #>> '{}'
-                   END
-                   FROM jsonb_each(response_data)
+  -- Get the form schema
+  SELECT schema INTO form_schema 
+  FROM public.forms 
+  WHERE id = form_id;
+  
+  -- Process each response
+  FOR question_id, response_value IN 
+    SELECT 
+      key,
+      CASE 
+        WHEN jsonb_typeof(value) IN ('object', 'array') THEN jsonb_pretty(value)
+        ELSE value #>> '{}'
+      END
+    FROM jsonb_each(response_data)
   LOOP
-    result := result || key_value || E'\n';
+    -- Default to question_id if we can't find the question
+    question_label := question_id;
+    
+    -- Try to find the question label in the form schema if it exists
+    IF form_schema IS NOT NULL THEN
+      -- Loop through schema items to find matching question
+      FOR i IN 0..jsonb_array_length(form_schema) - 1 LOOP
+        IF form_schema->i->>'id' = question_id THEN
+          question_label := form_schema->i->>'label';
+          EXIT;
+        END IF;
+      END LOOP;
+    END IF;
+    
+    -- Append to result
+    result := result || question_label || ': ' || response_value || E'\n';
   END LOOP;
   
   RETURN result;
@@ -45,7 +72,7 @@ BEGIN
     'form_response_embeddings',
     jsonb_build_object(
       'id', NEW.id,
-      'text', form_response_to_text(NEW.responses)
+      'text', form_response_to_text(NEW.responses, NEW.form_id)
     )
   );
   

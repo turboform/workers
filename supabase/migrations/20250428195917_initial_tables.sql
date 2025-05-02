@@ -1,6 +1,7 @@
 -- Table that contains more user details
 create table user_details (
   id uuid references auth.users not null primary key,
+  email text,
   full_name text,
   avatar_url text,
   billing_address jsonb,
@@ -13,19 +14,26 @@ create policy "User can view their own data." on user_details for select using (
 create policy "User can update their own data." on user_details for update using (auth.uid() = id);
 
 -- Trigger to automatically create a new user details entry when a new user signs up
-create function public.handle_new_signup() returns trigger as $$ begin
-insert into public.user_details (id, full_name, avatar_url)
-values (
-    new.id,
-    new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'avatar_url'
-  );
-return new;
-end;
-$$ language plpgsql security definer;
-create trigger on_auth_user_created
-after
-insert on auth.users for each row execute procedure public.handle_new_signup();
+CREATE FUNCTION public.handle_new_signup() RETURNS TRIGGER AS $$
+BEGIN
+  -- Only insert non-anonymous users (users with an email)
+  IF new.email IS NOT NULL AND new.email != '' THEN
+    INSERT INTO public.user_details (id, full_name, avatar_url, email)
+    VALUES (
+      new.id,
+      new.raw_user_meta_data->>'full_name',
+      new.raw_user_meta_data->>'avatar_url',
+      new.email
+    );
+  END IF;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE PROCEDURE public.handle_new_signup();
 
 -- Table that contains a mapping of user ID to Stripe customer ID
 create table stripe_customers (
@@ -150,6 +158,8 @@ CREATE TABLE IF NOT EXISTS public.forms (
   -- Store form fields as JSON
   is_public BOOLEAN DEFAULT false,
   is_draft BOOLEAN DEFAULT true,
+  short_id TEXT,
+  expires_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -158,12 +168,8 @@ CREATE TABLE IF NOT EXISTS public.forms (
 CREATE TABLE IF NOT EXISTS public.form_responses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   form_id UUID REFERENCES public.forms(id) ON DELETE CASCADE NOT NULL,
-  responses JSONB NOT NULL,
-  -- Store responses as JSON
-  respondent_id UUID REFERENCES auth.users(id) ON DELETE
-  SET NULL,
-    -- Optional link to authenticated user
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  responses JSONB NOT NULL, -- Store responses as JSON
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.forms ENABLE ROW LEVEL SECURITY;
@@ -197,11 +203,8 @@ INSERT WITH CHECK (
     )
   );
 
--- Users can view their own responses
-CREATE POLICY "Users can view their own responses" ON public.form_responses FOR
-SELECT USING (respondent_id = auth.uid());
-
 -- Create index for better performance
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_details_email ON public.user_details(email);
 CREATE INDEX IF NOT EXISTS idx_forms_user_id ON public.forms(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_forms_short_id ON public.forms(short_id);
 CREATE INDEX IF NOT EXISTS idx_form_responses_form_id ON public.form_responses(form_id);
-CREATE INDEX IF NOT EXISTS idx_form_responses_respondent_id ON public.form_responses(respondent_id);
