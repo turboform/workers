@@ -19,6 +19,7 @@
         "STRIPE_SESSION_REDIRECT_URL": "http://localhost:3000/account",
         "CHECKOUT_SUCCESS_REDIRECT_URL": "http://localhost:3000/account",
         "CHECKOUT_CANCEL_REDIRECT_URL": "http://localhost:3000/account",
+        "NODE_ENV": "development",
       },
     },
     "prd": {
@@ -28,6 +29,7 @@
         "STRIPE_SESSION_REDIRECT_URL": "https://turboform.ai/account",
         "CHECKOUT_SUCCESS_REDIRECT_URL": "https://turboform.ai/account",
         "CHECKOUT_CANCEL_REDIRECT_URL": "https://turboform.ai/account",
+        "NODE_ENV": "production",
       },
     },
   },
