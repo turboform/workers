@@ -1,0 +1,51 @@
+# Top-level configuration
+name = "workers"
+main = "src/index.ts"
+compatibility_date = "2025-03-27"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+# Environment Variables
+[vars]
+SUPABASE_URL = "https://krleqnhlvnyqtkqoyogw.supabase.co"
+STRIPE_SESSION_REDIRECT_URL = "https://turboform.ai/account"
+CHECKOUT_SUCCESS_REDIRECT_URL = "https://turboform.ai/account"
+CHECKOUT_CANCEL_REDIRECT_URL = "https://turboform.ai/account"
+
+# Dev Environment
+[env.dev]
+workers_dev = true
+
+[env.dev.vars]
+SUPABASE_URL = "https://wmghucwmjnbqpsujncee.supabase.co"
+STRIPE_SESSION_REDIRECT_URL = "http://localhost:3000/account"
+CHECKOUT_SUCCESS_REDIRECT_URL = "http://localhost:3000/account"
+CHECKOUT_CANCEL_REDIRECT_URL = "http://localhost:3000/account"
+NODE_ENV = "development"
+
+# Production Environment
+[env.prd]
+route = "https://internal-workers-prd.turboform.ai"
+
+[env.prd.vars]
+SUPABASE_URL = "https://krleqnhlvnyqtkqoyogw.supabase.co"
+STRIPE_SESSION_REDIRECT_URL = "https://turboform.ai/account"
+CHECKOUT_SUCCESS_REDIRECT_URL = "https://turboform.ai/account"
+CHECKOUT_CANCEL_REDIRECT_URL = "https://turboform.ai/account"
+NODE_ENV = "production"
+
+# Smart Placement is commented out in the original file
+# [placement]
+# mode = "smart"
+
+# Other bindings were commented out in the original file
+# [assets]
+# directory = "./public/"
+# binding = "ASSETS"
+
+# Services were commented out in the original file
+# [[services]]
+# binding = "MY_SERVICE"
+# service = "my-service"
