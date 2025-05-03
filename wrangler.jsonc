@@ -5,7 +5,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "workers",
-  "main": "src/index.ts",
+  "main": "./src/index.ts",
   "compatibility_date": "2025-03-27",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
