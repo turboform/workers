@@ -3,7 +3,7 @@ name: Deploy Workers Production
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
