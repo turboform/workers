@@ -14,7 +14,7 @@ const app = new Hono()
 
 // Setup OpenAPI registry
 const openapi = fromHono(app, {
-  docs_url: process.env.NODE_ENV === 'production' ? null : '/',
+  docs_url: '/',
 })
 
 // TODO: legacy routes - delete when no longer used
