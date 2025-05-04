@@ -7,12 +7,12 @@
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "cf-typegen": "wrangler types",
-    "migrate-db": "npx supabase migration up --linked",
     "gen-db-types": "npx supabase gen types typescript --project-id krleqnhlvnyqtkqoyogw --schema public > src/lib/types/database.types.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.49.4",
     "chanfana": "^2.0.2",
+    "crypto": "1.0.1",
     "hono": "^4.4.7",
     "openai": "4.95.1",
     "stripe": "17.7.0",
