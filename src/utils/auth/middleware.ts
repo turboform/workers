@@ -19,6 +19,7 @@ export const requireAuth = createMiddleware(async (context: AppContext, next) =>
 
     console.log('Authentication token verified successfully.')
     context.set('user', data.user)
+    context.set('authToken', token)
     await next()
   } catch (error) {
     console.error('Error in auth middleware:', error)

@@ -17,5 +17,6 @@ export type AppContext = Context<{
   Bindings: Env
   Variables: {
     user: User
+    authToken: string
   }
 }>
