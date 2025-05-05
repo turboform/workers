@@ -66,11 +66,14 @@ export class StripeWebhooks extends OpenAPIRoute {
     const signature = c.req.header('stripe-signature')
     const webhookSecret = c.env.STRIPE_WEBHOOK_SECRET_LIVE
 
-    const request = c.req.raw
-    const rawBody = await request.arrayBuffer()
+    console.log('Webhook secret:', webhookSecret)
+    console.log('Signature:', signature)
+
     const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
-    const buf = new TextDecoder().decode(rawBody)
-    const event = (await stripe.webhooks.constructEventAsync(buf, signature, webhookSecret)) as any
+    const body = await c.req.text()
+    console.log('Body:', body)
+
+    const event = (await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)) as any
     console.log(`Event received: ${event.type}`)
 
     if (relevantEvents.has(event.type)) {
