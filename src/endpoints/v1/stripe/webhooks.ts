@@ -63,6 +63,7 @@ export class StripeWebhooks extends OpenAPIRoute {
   }
 
   async handle(c: AppContext) {
+    console.log('Stripe webhook received')
     const buf = await c.req.text()
     const signature = c.req.header('stripe-signature')
     const webhookSecret = c.env.STRIPE_WEBHOOK_SECRET_LIVE
@@ -119,12 +120,8 @@ export class StripeWebhooks extends OpenAPIRoute {
       }
     }
 
-    return {
+    return c.json({
       success: true,
-      statusCode: 200,
-      data: {
-        received: true,
-      },
-    }
+    })
   }
 }
