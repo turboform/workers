@@ -50,9 +50,10 @@ openapi.post('/v1/embeddings/question', QuestionAnswering)
 // Use these endpoints instead of the legacy ones
 
 // Stripe endpoints
-openapi.use('/api/v1/stripe/*', requireAuth)
 openapi.post('/api/v1/stripe/webhooks', StripeWebhooks)
+openapi.use('/api/v1/stripe/portal-link', requireAuth)
 openapi.post('/api/v1/stripe/portal-link', CreatePortalLink)
+openapi.use('/api/v1/stripe/session', requireAuth)
 openapi.post('/api/v1/stripe/session', CreateCheckoutSession)
 
 // User endpoints
