@@ -22,7 +22,7 @@ const openapi = fromHono(app, {
 
 app.onError((c, e) => {
   // TODO: refine error handling
-  console.error('Error in Hono:', e)
+  console.error('Error in Hono:', JSON.stringify(e))
   if (e instanceof HTTPException && e.status < 500) {
     return {
       status: e.status,
