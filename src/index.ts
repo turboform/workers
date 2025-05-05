@@ -9,6 +9,7 @@ import { QuestionAnswering } from 'endpoints/v1/embeddings/questionAnswering'
 import { SubmitFormResponse } from 'endpoints/v1/forms/submitFormResponse'
 import { requireAuth } from 'utils/auth/middleware'
 import { GenerateForm } from 'endpoints/v1/forms/generateForm'
+import { GetFormResponses } from 'endpoints/v1/responses/getFormResponses'
 
 // Start a Hono app
 const app = new Hono()
@@ -50,6 +51,10 @@ openapi.post('/api/v1/embeddings/process', ProcessEmbeddings)
 openapi.post('/api/v1/forms/submit', SubmitFormResponse)
 openapi.use('/api/v1/forms/generate', requireAuth)
 openapi.post('/api/v1/forms/generate', GenerateForm)
+
+// Response endpoints
+openapi.use('/api/v1/responses/*', requireAuth)
+openapi.get('/api/v1/responses/:formId', GetFormResponses)
 
 // Export the Hono app
 export default app
