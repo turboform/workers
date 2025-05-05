@@ -3,7 +3,7 @@ import { AppContext } from 'lib/types/app-context'
 import { HTTPException } from 'hono/http-exception'
 import { createMiddleware } from 'hono/factory'
 
-export const AuthMiddleware = createMiddleware(async (context: AppContext, next) => {
+export const requireAuth = createMiddleware(async (context: AppContext, next) => {
   try {
     console.log('Checking authentication token...')
     const authHeader = context.req.header('Authorization')
