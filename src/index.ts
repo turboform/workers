@@ -7,9 +7,9 @@ import { GetUserDetails } from 'endpoints/v1/user/getUserDetails'
 import { ProcessEmbeddings } from 'endpoints/v1/embeddings/processEmbeddings'
 import { QuestionAnswering } from 'endpoints/v1/embeddings/questionAnswering'
 import { SubmitFormResponse } from 'endpoints/v1/forms/submitFormResponse'
-import { requireAuth } from 'utils/auth/middleware'
 import { GenerateForm } from 'endpoints/v1/forms/generateForm'
 import { GetFormResponses } from 'endpoints/v1/responses/getFormResponses'
+import { requireAuth } from 'utils/auth/middleware'
 import { HTTPException } from 'hono/http-exception'
 
 // Start a Hono app
@@ -24,16 +24,16 @@ app.onError((e, c) => {
   // TODO: refine error handling
   console.error('Error in Hono:', JSON.stringify(e))
   if (e instanceof HTTPException && e.status < 500) {
-    return {
+    return c.json({
       status: e.status,
       message: e.message,
-    }
+    }, { status: e.status })
   }
 
-  return {
+  return c.json({
     status: 500,
     message: 'Internal server error',
-  }
+  }, { status: 500 })
 })
 
 // TODO: legacy routes - delete when no longer used
