@@ -10,6 +10,7 @@ import { SubmitFormResponse } from 'endpoints/v1/forms/submitFormResponse'
 import { requireAuth } from 'utils/auth/middleware'
 import { GenerateForm } from 'endpoints/v1/forms/generateForm'
 import { GetFormResponses } from 'endpoints/v1/responses/getFormResponses'
+import { HTTPException } from 'hono/http-exception'
 
 // Start a Hono app
 const app = new Hono()
@@ -17,6 +18,22 @@ const app = new Hono()
 // Setup OpenAPI registry
 const openapi = fromHono(app, {
   docs_url: '/',
+})
+
+app.onError((c, e) => {
+  // TODO: refine error handling
+  console.error('Error in Hono:', e)
+  if (e instanceof HTTPException && e.status < 500) {
+    return {
+      status: e.status,
+      message: e.message,
+    }
+  }
+
+  return {
+    status: 500,
+    message: 'Internal server error',
+  }
 })
 
 // TODO: legacy routes - delete when no longer used
