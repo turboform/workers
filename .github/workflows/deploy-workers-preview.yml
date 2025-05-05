@@ -2,8 +2,6 @@ name: Deploy Workers Preview
 
 on:
   pull_request:
-    paths:
-      - './*'
 
 jobs:
   deploy:
