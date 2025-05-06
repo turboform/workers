@@ -24,16 +24,22 @@ app.onError((e, c) => {
   // TODO: refine error handling
   console.error('Error in Hono:', JSON.stringify(e))
   if (e instanceof HTTPException && e.status < 500) {
-    return c.json({
-      status: e.status,
-      message: e.message,
-    }, { status: e.status })
+    return c.json(
+      {
+        status: e.status,
+        message: e.message,
+      },
+      { status: e.status }
+    )
   }
 
-  return c.json({
-    status: 500,
-    message: 'Internal server error',
-  }, { status: 500 })
+  return c.json(
+    {
+      status: 500,
+      message: 'Internal server error',
+    },
+    { status: 500 }
+  )
 })
 
 // TODO: legacy routes - delete when no longer used
@@ -61,18 +67,18 @@ openapi.use('/api/v1/user/*', requireAuth)
 openapi.get('/api/v1/user', GetUserDetails)
 
 // Embedding endpoints
-openapi.use('/api/v1/embeddings/question', requireAuth)
-openapi.post('/api/v1/embeddings/question', QuestionAnswering)
-openapi.post('/api/v1/embeddings/process', ProcessEmbeddings)
+openapi.use('/api/v1/embedding/question', requireAuth)
+openapi.post('/api/v1/embedding/question', QuestionAnswering)
+openapi.post('/api/v1/embedding/process', ProcessEmbeddings)
 
 // Form endpoints
-openapi.post('/api/v1/forms/submit', SubmitFormResponse)
-openapi.use('/api/v1/forms/generate', requireAuth)
-openapi.post('/api/v1/forms/generate', GenerateForm)
+openapi.post('/api/v1/form/submit', SubmitFormResponse)
+openapi.use('/api/v1/form/generate', requireAuth)
+openapi.post('/api/v1/form/generate', GenerateForm)
 
 // Response endpoints
-openapi.use('/api/v1/responses/*', requireAuth)
-openapi.get('/api/v1/responses/:formId', GetFormResponses)
+openapi.use('/api/v1/response/*', requireAuth)
+openapi.get('/api/v1/response/:formId', GetFormResponses)
 
 // Export the Hono app
 export default app
