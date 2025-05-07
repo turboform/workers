@@ -37,7 +37,7 @@ export class GetFormResponses extends OpenAPIRoute {
   }
 
   async handle(c: AppContext) {
-    const formId = c.req.query('formId')
+    const formId = c.req.param('formId')
     const authToken = c.get('authToken')
 
     const { data: responses, error } = await supabaseApiClient(authToken, c)
