@@ -1,10 +1,9 @@
 import { OpenAPIRoute, Str } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
-import { ProtectedRoute } from 'utils/auth/protected-route'
-import { User } from '@supabase/supabase-js'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { getSubscriptionForUser } from 'utils/data/user'
+import { HTTPException } from 'hono/http-exception'
 
 export class GetUserDetails extends OpenAPIRoute {
   schema = {
@@ -39,23 +38,24 @@ export class GetUserDetails extends OpenAPIRoute {
   }
 
   async handle(c: AppContext) {
-    return ProtectedRoute(c, async (authToken: string, user: User) => {
-      const { data: userDetails, error } = await supabaseApiClient(authToken, c)
-        .from('user_details')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+    const user = c.get('user')
+    const authToken = c.get('authToken')
 
-      if (error) {
-        throw new Error(`Couldn't fetch user details for ${user.id}: ${error.message}`)
-      }
+    const { data: userDetails, error } = await supabaseApiClient(authToken, c)
+      .from('user_details')
+      .select('*')
+      .eq('id', user.id)
+      .single()
 
-      const subscription = await getSubscriptionForUser(c, user.id)
+    if (error) {
+      throw new HTTPException(404, { message: `Couldn't fetch user details for ${user.id}: ${error.message}` })
+    }
 
-      return {
-        ...userDetails,
-        subscription: subscription || null,
-      }
+    const subscription = await getSubscriptionForUser(c, user.id)
+
+    return c.json({
+      ...userDetails,
+      subscription: subscription || null,
     })
   }
 }

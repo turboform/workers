@@ -1,4 +1,5 @@
 import { type Context } from 'hono'
+import { User } from '@supabase/supabase-js'
 
 export type Env = {
   SUPABASE_URL: string
@@ -12,4 +13,10 @@ export type Env = {
   OPENAI_API_KEY: string
 }
 
-export type AppContext = Context<{ Bindings: Env }>
+export type AppContext = Context<{
+  Bindings: Env
+  Variables: {
+    user: User
+    authToken: string
+  }
+}>

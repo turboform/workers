@@ -119,12 +119,8 @@ export class StripeWebhooks extends OpenAPIRoute {
       }
     }
 
-    return {
+    return c.json({
       success: true,
-      statusCode: 200,
-      data: {
-        received: true,
-      },
-    }
+    })
   }
 }

@@ -1,10 +1,8 @@
 import { stripeClient } from 'utils/clients/stripe'
 import { getOrCreateCustomer } from 'utils/data/customer'
-import { ProtectedRoute } from 'utils/auth/protected-route'
 import { OpenAPIRoute, Str } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
-import { User } from '@supabase/supabase-js'
 
 export class CreatePortalLink extends OpenAPIRoute {
   schema = {
@@ -34,15 +32,14 @@ export class CreatePortalLink extends OpenAPIRoute {
   }
 
   async handle(c: AppContext) {
-    return ProtectedRoute(c, async (authToken: string, user: User) => {
-      const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
-      const customerId = await getOrCreateCustomer(c, user.id, user.email)
-      const { url } = await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: c.env.STRIPE_SESSION_REDIRECT_URL,
-      })
-
-      return { url }
+    const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
+    const user = c.get('user')
+    const customerId = await getOrCreateCustomer(c, user.id, user.email)
+    const { url } = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: c.env.STRIPE_SESSION_REDIRECT_URL,
     })
+
+    return c.json({ url })
   }
 }

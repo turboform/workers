@@ -9,7 +9,6 @@ export type Database = {
           embedding: string | null
           form_id: string
           id: string
-          respondent_id: string | null
           responses: Json
         }
         Insert: {
@@ -17,7 +16,6 @@ export type Database = {
           embedding?: string | null
           form_id: string
           id?: string
-          respondent_id?: string | null
           responses: Json
         }
         Update: {
@@ -25,7 +23,6 @@ export type Database = {
           embedding?: string | null
           form_id?: string
           id?: string
-          respondent_id?: string | null
           responses?: Json
         }
         Relationships: [
@@ -47,7 +44,7 @@ export type Database = {
           is_draft: boolean | null
           is_public: boolean | null
           schema: Json
-          short_id: string
+          short_id: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -60,7 +57,7 @@ export type Database = {
           is_draft?: boolean | null
           is_public?: boolean | null
           schema: Json
-          short_id: string
+          short_id?: string | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -73,7 +70,7 @@ export type Database = {
           is_draft?: boolean | null
           is_public?: boolean | null
           schema?: Json
-          short_id?: string
+          short_id?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -261,7 +258,7 @@ export type Database = {
     }
     Functions: {
       form_response_to_text: {
-        Args: { response_data: Json }
+        Args: { response_data: Json; form_id: string }
         Returns: string
       }
       match_form_responses_by_embedding: {

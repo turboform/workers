@@ -26,9 +26,6 @@ CHECKOUT_CANCEL_REDIRECT_URL = "http://localhost:3000/account"
 NODE_ENV = "development"
 
 # Production Environment
-[env.prd]
-route = "https://internal-workers-prd.turboform.ai"
-
 [env.prd.vars]
 SUPABASE_URL = "https://krleqnhlvnyqtkqoyogw.supabase.co"
 STRIPE_SESSION_REDIRECT_URL = "https://turboform.ai/account"

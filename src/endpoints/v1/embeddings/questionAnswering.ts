@@ -2,8 +2,6 @@ import { OpenAPIRoute } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { openAIClient } from 'utils/clients/openai'
-import { ProtectedRoute } from 'utils/auth/protected-route'
-import { User } from '@supabase/supabase-js'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 
 export class QuestionAnswering extends OpenAPIRoute {
@@ -47,87 +45,77 @@ export class QuestionAnswering extends OpenAPIRoute {
   }
 
   async handle(c: AppContext) {
-    return ProtectedRoute(c, async (authToken: string, user: User) => {
-      try {
-        // Parse request
-        const body = await c.req.json()
-        const { question, formId, limit, threshold } = body
+    const authToken = c.get('authToken')
 
-        console.log('question', question)
-        console.log('formId', formId)
-        console.log('limit', limit)
-        console.log('threshold', threshold)
+    try {
+      // Parse request
+      const body = await c.req.json()
+      const { question, formId, limit, threshold } = body
 
-        // Generate embedding for the question
-        const questionEmbedding = await generateOpenAIEmbedding(c, question)
+      // Generate embedding for the question
+      const questionEmbedding = await generateOpenAIEmbedding(c, question)
 
-        // Initialize Supabase client
-        const supabase = supabaseApiClient(authToken, c)
+      // Initialize Supabase client
+      const supabase = supabaseApiClient(authToken, c)
 
-        // Find similar form responses using vector similarity search
-        const { data: relevantResponses, error: searchError } = await supabase.rpc(
-          'match_form_responses_by_embedding',
-          {
-            query_embedding: questionEmbedding as any,
-            similarity_threshold: threshold,
-            match_count: limit,
-            p_form_id: formId,
-          }
-        )
+      // Find similar form responses using vector similarity search
+      const { data: relevantResponses, error: searchError } = await supabase.rpc('match_form_responses_by_embedding', {
+        query_embedding: questionEmbedding as any,
+        similarity_threshold: threshold,
+        match_count: limit,
+        p_form_id: formId,
+      })
 
-        console.log('relevantResponses', relevantResponses)
+      if (searchError) {
+        console.error('Vector similarity search failed:', searchError)
+        throw new Error(`Failed to search similar responses: ${searchError.message}`)
+      }
 
-        if (searchError) {
-          console.error('Vector similarity search failed:', searchError)
-          throw new Error(`Failed to search similar responses: ${searchError.message}`)
-        }
-
-        if (!relevantResponses || relevantResponses.length === 0) {
-          return c.json({
-            success: true,
-            answer: "I couldn't find any relevant information to answer your question.",
-            relevantResponses: [],
-          })
-        }
-
-        // Format the relevant responses for context
-        const { data: form } = await supabase.from('forms').select('*').eq('id', formId).single()
-
-        const context = relevantResponses
-          .map((response) => {
-            const formattedContent = Object.entries(response.responses)
-              .map(([key, value]) => {
-                const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
-                return `${question}: ${value}`
-              })
-              .join('\n')
-            return formattedContent
-          })
-          .join('\n\n---\n\n')
-
-        // Generate an answer using OpenAI
-        const answer = await generateAnswerFromContext(c, question, context)
-
+      if (!relevantResponses || relevantResponses.length === 0) {
         return c.json({
           success: true,
-          answer,
-          relevantResponses: relevantResponses.map((resp) => ({
-            id: resp.id,
-            responses: resp.responses,
-            similarity: resp.similarity,
-          })),
+          answer: "I couldn't find any relevant information to answer your question.",
+          relevantResponses: [],
         })
-      } catch (error) {
-        return c.json(
-          {
-            success: false,
-            error: 'Failed to answer question',
-            details: error instanceof Error ? error.message : String(error),
-          },
-          500
-        )
       }
-    })
+
+      // Format the relevant responses for context
+      const { data: form } = await supabase.from('forms').select('*').eq('id', formId).single()
+
+      const context = relevantResponses
+        .map((response) => {
+          const formattedContent = Object.entries(response.responses)
+            .map(([key, value]) => {
+              const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+              return `${question}: ${value}`
+            })
+            .join('\n')
+          return formattedContent
+        })
+        .join('\n\n---\n\n')
+
+      // Generate an answer using OpenAI
+      const answer = await generateAnswerFromContext(c, question, context)
+
+      return c.json({
+        success: true,
+        answer,
+        relevantResponses: relevantResponses.map((resp) => ({
+          id: resp.id,
+          responses: resp.responses,
+          similarity: resp.similarity,
+        })),
+      })
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          error: 'Failed to answer question',
+          details: error instanceof Error ? error.message : String(error),
+        },
+        { status: 500 }
+      )
+    }
   }
 }
 
