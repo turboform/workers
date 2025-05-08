@@ -14,6 +14,7 @@ import { PublishForm } from 'endpoints/v1/forms/publishForm'
 import { GetForms } from 'endpoints/v1/forms/getForms'
 import { GetFormResponses } from 'endpoints/v1/responses/getFormResponses'
 import { LinkAnonymousData } from 'endpoints/v1/auth/linkAnonymousData'
+import { SendContactEmail } from 'endpoints/v1/contact/sendContactEmail'
 import { requireAuth } from 'utils/auth/middleware'
 import { HTTPException } from 'hono/http-exception'
 
@@ -95,6 +96,9 @@ openapi.get('/api/v1/response/:formId', GetFormResponses)
 // Auth endpoints
 openapi.use('/api/v1/auth/link-anonymous-data', requireAuth)
 openapi.post('/api/v1/auth/link-anonymous-data', LinkAnonymousData)
+
+// Contact endpoints
+openapi.post('/api/v1/contact', SendContactEmail)
 
 // Export the Hono app
 export default app
