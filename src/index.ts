@@ -9,6 +9,8 @@ import { QuestionAnswering } from 'endpoints/v1/embeddings/questionAnswering'
 import { SubmitFormResponse } from 'endpoints/v1/forms/submitFormResponse'
 import { GenerateForm } from 'endpoints/v1/forms/generateForm'
 import { GetForm } from 'endpoints/v1/forms/getForm'
+import { GetFormById } from 'endpoints/v1/forms/getFormById'
+import { GetFormByShortId } from 'endpoints/v1/forms/getFormByShortId'
 import { UpdateForm } from 'endpoints/v1/forms/updateForm'
 import { PublishForm } from 'endpoints/v1/forms/publishForm'
 import { GetForms } from 'endpoints/v1/forms/getForms'
@@ -84,6 +86,8 @@ openapi.use('/api/v1/form/generate', requireAuth)
 openapi.post('/api/v1/form/generate', GenerateForm)
 openapi.use('/api/v1/form/create', requireAuth)
 openapi.post('/api/v1/form/create', CreateForm)
+openapi.get('/api/v1/form/by-id/:id', GetFormById)
+openapi.get('/api/v1/form/by-short-id/:shortId', GetFormByShortId)
 openapi.use('/api/v1/form/:id', requireAuth)
 openapi.get('/api/v1/form/:id', GetForm)
 openapi.put('/api/v1/form/:id', UpdateForm)
