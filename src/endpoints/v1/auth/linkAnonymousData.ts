@@ -57,7 +57,7 @@ export class LinkAnonymousData extends OpenAPIRoute {
       }
 
       // Verify the source user is actually anonymous
-      if (!anonymousUserData.user?.app_metadata?.is_anonymous) {
+      if (!anonymousUserData.user?.is_anonymous) {
         throw new HTTPException(403, { message: 'Unauthorized - Can only transfer data from anonymous accounts' })
       }
 
