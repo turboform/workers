@@ -12,6 +12,7 @@ import { GetForm } from 'endpoints/v1/forms/getForm'
 import { UpdateForm } from 'endpoints/v1/forms/updateForm'
 import { PublishForm } from 'endpoints/v1/forms/publishForm'
 import { GetForms } from 'endpoints/v1/forms/getForms'
+import { CreateForm } from 'endpoints/v1/forms/createForm'
 import { GetFormResponses } from 'endpoints/v1/responses/getFormResponses'
 import { LinkAnonymousData } from 'endpoints/v1/auth/linkAnonymousData'
 import { SendContactEmail } from 'endpoints/v1/contact/sendContactEmail'
@@ -81,6 +82,8 @@ openapi.post('/api/v1/embedding/process', ProcessEmbeddings)
 openapi.post('/api/v1/form/submit', SubmitFormResponse)
 openapi.use('/api/v1/form/generate', requireAuth)
 openapi.post('/api/v1/form/generate', GenerateForm)
+openapi.use('/api/v1/form/create', requireAuth)
+openapi.post('/api/v1/form/create', CreateForm)
 openapi.use('/api/v1/form/:id', requireAuth)
 openapi.get('/api/v1/form/:id', GetForm)
 openapi.put('/api/v1/form/:id', UpdateForm)
