@@ -121,6 +121,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
             }
 
             // Mark as successfully processed
+            console.log(`Successfully processed embedding for form response: ${job.id}`)
             processedMsgIds.push(msg.msg_id)
             results.processed++
           } catch (error) {
@@ -147,6 +148,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
       if (processedMsgIds.length > 0) {
         console.log(`Deleting ${processedMsgIds.length} processed messages from the queue`)
         processedMsgIds.forEach(async (msgId) => {
+          console.log(`Deleting message: ${msgId}`)
           const { error: deleteError } = await supabase.schema('pgmq_public' as any).rpc('delete', {
             queue_name: 'form_response_embeddings',
             message_id: msgId,
