@@ -18,6 +18,7 @@ import { CreateForm } from 'endpoints/v1/forms/createForm'
 import { GetFormResponses } from 'endpoints/v1/responses/getFormResponses'
 import { LinkAnonymousData } from 'endpoints/v1/auth/linkAnonymousData'
 import { SendContactEmail } from 'endpoints/v1/contact/sendContactEmail'
+import { DeleteForm } from 'endpoints/v1/forms/deleteForm'
 import { requireAuth } from 'utils/auth/middleware'
 import { HTTPException } from 'hono/http-exception'
 
@@ -95,6 +96,8 @@ openapi.use('/api/v1/form/publish', requireAuth)
 openapi.post('/api/v1/form/publish', PublishForm)
 openapi.use('/api/v1/forms', requireAuth)
 openapi.get('/api/v1/forms', GetForms)
+openapi.use('/api/v1/form/:id', requireAuth)
+openapi.delete('/api/v1/form/:id', DeleteForm)
 
 // Response endpoints
 openapi.use('/api/v1/response/*', requireAuth)
