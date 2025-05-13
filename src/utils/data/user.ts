@@ -28,10 +28,7 @@ export const manageSubscriptionStatusChange = async (
   customerId: string,
   createAction: boolean = false
 ) => {
-  const {
-    data: { user_id: uuid },
-    error: noCustomerError,
-  } = await supabaseAdminClient(c)
+  const { data, error: noCustomerError } = await supabaseAdminClient(c)
     .from('stripe_customers')
     .select('user_id')
     .eq('stripe_customer_id', customerId)
@@ -52,7 +49,7 @@ export const manageSubscriptionStatusChange = async (
     .upsert([
       {
         id: subscription.id,
-        user_id: uuid,
+        user_id: data.user_id,
         metadata: subscription.metadata || null,
         status:
           subscription.status === 'active' ||
@@ -78,11 +75,11 @@ export const manageSubscriptionStatusChange = async (
   if (error) {
     console.error(`An error occurred while saving subscription: ${error.message}`)
   } else {
-    console.log(`Saved subscription ${subscription.id} for user ${uuid}`)
+    console.log(`Saved subscription ${subscription.id} for user ${data.user_id}`)
   }
 
   if (createAction && subscription.default_payment_method) {
-    await copyBillingDetailsToCustomer(c, uuid, subscription.default_payment_method)
+    await copyBillingDetailsToCustomer(c, data.user_id, subscription.default_payment_method)
   }
 }
 
@@ -92,10 +89,7 @@ export const updateStripeUserDetails = async (
   address: Stripe.Address,
   payment_method: string
 ) => {
-  const {
-    data: { user_id: uuid },
-    error: noCustomerError,
-  } = await supabaseAdminClient(c)
+  const { data, error: noCustomerError } = await supabaseAdminClient(c)
     .from('stripe_customers')
     .select('user_id')
     .eq('stripe_customer_id', customerId)
@@ -114,7 +108,7 @@ export const updateStripeUserDetails = async (
       .update({
         payment_method: paymentMethod[paymentMethod.type] as any,
       })
-      .eq('id', uuid)
+      .eq('id', data.user_id)
 
     if (updatePaymentMethodError) {
       console.error(`An error occurred while updating payment method: ${updatePaymentMethodError.message}`)
@@ -127,7 +121,7 @@ export const updateStripeUserDetails = async (
       .update({
         billing_address: address as any,
       })
-      .eq('id', uuid)
+      .eq('id', data.user_id)
 
     if (error) {
       console.error(`An error occurred while updating user details: ${error.message}`)
