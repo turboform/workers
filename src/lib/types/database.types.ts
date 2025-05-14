@@ -3,6 +3,20 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      form_integrations: {
+        Row: FormIntegrationsRow
+        Insert: FormIntegrationsInsert
+        Update: FormIntegrationsUpdate
+        Relationships: [
+          {
+            foreignKeyName: "form_integrations_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       form_responses: {
         Row: {
           created_at: string | null
@@ -382,6 +396,36 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
+
+export type FormIntegrationsRow = {
+  id: string
+  form_id: string
+  integration_type: string
+  is_enabled: boolean
+  config: Json
+  created_at: string
+  updated_at: string
+}
+
+export type FormIntegrationsInsert = {
+  id?: string
+  form_id: string
+  integration_type: string
+  is_enabled?: boolean
+  config: Json
+  created_at?: string
+  updated_at?: string
+}
+
+export type FormIntegrationsUpdate = {
+  id?: string
+  form_id?: string
+  integration_type?: string
+  is_enabled?: boolean
+  config?: Json
+  created_at?: string
+  updated_at?: string
+}
 
 export const Constants = {
   public: {

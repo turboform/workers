@@ -1,0 +1,351 @@
+import { Resend } from 'resend'
+import { IntegrationType, FormIntegration } from 'lib/types/integration'
+import type { AppContext } from 'lib/types/app-context'
+import { supabaseAdminClient } from 'utils/clients/supabase/admin'
+
+export async function processIntegrations(
+  c: AppContext,
+  formId: string,
+  formData: any,
+  responses: Record<string, any>
+) {
+  try {
+    const { data: form, error: formError } = await supabaseAdminClient(c)
+      .from('forms')
+      .select('*')
+      .eq('id', formId)
+      .single()
+
+    if (formError || !form) {
+      console.error('Error fetching form for integration processing:', formError)
+      return
+    }
+
+    const { data: integrations, error: integrationsError } = await supabaseAdminClient(c)
+      .from('form_integrations')
+      .select('*')
+      .eq('form_id', formId)
+      .eq('is_enabled', true)
+
+    if (integrationsError) {
+      console.error('Error fetching integrations:', integrationsError)
+      return
+    }
+
+    for (const integration of integrations) {
+      await processIntegration(c, integration, form, responses)
+    }
+  } catch (error) {
+    console.error('Error processing integrations:', error)
+  }
+}
+
+async function processIntegration(
+  c: AppContext,
+  integration: FormIntegration,
+  form: any,
+  responses: Record<string, any>
+) {
+  const { integration_type, config } = integration
+
+  try {
+    switch (integration_type as IntegrationType) {
+      case 'email':
+        await processEmailIntegration(c, config, form, responses)
+        break
+      case 'slack':
+        await processSlackIntegration(config, form, responses)
+        break
+      case 'telegram':
+        await processTelegramIntegration(config, form, responses)
+        break
+      case 'zapier':
+        await processZapierIntegration(config, form, responses)
+        break
+      case 'make':
+        await processMakeIntegration(config, form, responses)
+        break
+      case 'webhook':
+        await processWebhookIntegration(config, form, responses)
+        break
+      default:
+        console.warn(`Unknown integration type: ${integration_type}`)
+    }
+  } catch (error) {
+    console.error(`Error processing ${integration_type} integration:`, error)
+  }
+}
+
+async function processEmailIntegration(
+  c: AppContext,
+  config: any,
+  form: any,
+  responses: Record<string, any>
+) {
+  try {
+    const { to, cc, subject_template } = config
+    
+    if (!to || !Array.isArray(to) || to.length === 0) {
+      console.error('Invalid email configuration: missing recipients')
+      return
+    }
+
+    const resendApiKey = process.env.RESEND_API_KEY
+    if (!resendApiKey) {
+      console.error('Resend API key not configured')
+      return
+    }
+
+    const resend = new Resend(resendApiKey)
+    
+    const formattedResponses = Object.entries(responses)
+      .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+      .join('\n')
+
+    const subject = subject_template 
+      ? subject_template.replace('{form_name}', form.name)
+      : `New submission for ${form.name}`
+
+    await resend.emails.send({
+      from: 'notifications@turboform.app',
+      to,
+      cc: cc || [],
+      subject,
+      html: `
+        <h1>New Form Submission</h1>
+        <p>You have received a new submission for the form: <strong>${form.name}</strong></p>
+        <h2>Responses:</h2>
+        ${formattedResponses}
+      `,
+    })
+  } catch (error) {
+    console.error('Error sending email notification:', error)
+  }
+}
+
+async function processSlackIntegration(
+  config: any,
+  form: any,
+  responses: Record<string, any>
+) {
+  try {
+    const { webhook_url, channel } = config
+    
+    if (!webhook_url) {
+      console.error('Invalid Slack configuration: missing webhook URL')
+      return
+    }
+
+    const formattedResponses = Object.entries(responses)
+      .map(([key, value]) => `*${key}:* ${value}`)
+      .join('\n')
+
+    const payload = {
+      text: `New submission for form: *${form.name}*`,
+      blocks: [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: 'New Form Submission',
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `You have received a new submission for the form: *${form.name}*`,
+          },
+        },
+        {
+          type: 'divider',
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: formattedResponses,
+          },
+        },
+      ],
+    }
+
+    if (channel) {
+      payload.channel = channel
+    }
+
+    const response = await fetch(webhook_url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Slack API responded with status: ${response.status}`)
+    }
+  } catch (error) {
+    console.error('Error sending Slack notification:', error)
+  }
+}
+
+async function processTelegramIntegration(
+  config: any,
+  form: any,
+  responses: Record<string, any>
+) {
+  try {
+    const { bot_token, chat_id } = config
+    
+    if (!bot_token || !chat_id) {
+      console.error('Invalid Telegram configuration: missing bot token or chat ID')
+      return
+    }
+
+    const formattedResponses = Object.entries(responses)
+      .map(([key, value]) => `*${key}:* ${value}`)
+      .join('\n')
+
+    const messageText = `
+*New Form Submission*
+You have received a new submission for the form: *${form.name}*
+
+*Responses:*
+${formattedResponses}
+    `
+
+    const response = await fetch(`https://api.telegram.org/bot${bot_token}/sendMessage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id,
+        text: messageText,
+        parse_mode: 'Markdown',
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(`Telegram API error: ${JSON.stringify(errorData)}`)
+    }
+  } catch (error) {
+    console.error('Error sending Telegram notification:', error)
+  }
+}
+
+async function processZapierIntegration(
+  config: any,
+  form: any,
+  responses: Record<string, any>
+) {
+  try {
+    const { webhook_url } = config
+    
+    if (!webhook_url) {
+      console.error('Invalid Zapier configuration: missing webhook URL')
+      return
+    }
+
+    const payload = {
+      form_id: form.id,
+      form_name: form.name,
+      submission_date: new Date().toISOString(),
+      responses,
+    }
+
+    const response = await fetch(webhook_url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Zapier webhook responded with status: ${response.status}`)
+    }
+  } catch (error) {
+    console.error('Error sending data to Zapier:', error)
+  }
+}
+
+async function processMakeIntegration(
+  config: any,
+  form: any,
+  responses: Record<string, any>
+) {
+  try {
+    const { webhook_url } = config
+    
+    if (!webhook_url) {
+      console.error('Invalid Make.com configuration: missing webhook URL')
+      return
+    }
+
+    const payload = {
+      form_id: form.id,
+      form_name: form.name,
+      submission_date: new Date().toISOString(),
+      responses,
+    }
+
+    const response = await fetch(webhook_url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Make.com webhook responded with status: ${response.status}`)
+    }
+  } catch (error) {
+    console.error('Error sending data to Make.com:', error)
+  }
+}
+
+async function processWebhookIntegration(
+  config: any,
+  form: any,
+  responses: Record<string, any>
+) {
+  try {
+    const { url, method, headers, include_form_data } = config
+    
+    if (!url || !method) {
+      console.error('Invalid webhook configuration: missing URL or method')
+      return
+    }
+
+    const payload: any = {}
+    
+    if (include_form_data) {
+      payload.form_id = form.id
+      payload.form_name = form.name
+      payload.submission_date = new Date().toISOString()
+    }
+    
+    payload.responses = responses
+
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...headers,
+    }
+
+    const response = await fetch(url, {
+      method,
+      headers: requestHeaders,
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Webhook responded with status: ${response.status}`)
+    }
+  } catch (error) {
+    console.error('Error sending data to webhook:', error)
+  }
+}
