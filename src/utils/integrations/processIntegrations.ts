@@ -3,6 +3,9 @@ import axios from 'axios'
 import { IntegrationType, FormIntegration } from 'lib/types/integration'
 import type { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
+import { Database } from 'lib/types/database.types'
+
+type Form = Database['public']['Tables']['forms']['Row']
 
 export async function processIntegrations(c: AppContext, formId: string, responses: Record<string, any>) {
   try {
@@ -39,7 +42,7 @@ export async function processIntegrations(c: AppContext, formId: string, respons
 async function processIntegration(
   c: AppContext,
   integration: FormIntegration,
-  form: any,
+  form: Form,
   responses: Record<string, any>
 ) {
   const { integration_type, config } = integration
@@ -72,7 +75,7 @@ async function processIntegration(
   }
 }
 
-async function processEmailIntegration(c: AppContext, config: any, form: any, responses: Record<string, any>) {
+async function processEmailIntegration(c: AppContext, config: any, form: Form, responses: Record<string, any>) {
   try {
     const { to, cc, subject_template } = config
 
@@ -90,12 +93,15 @@ async function processEmailIntegration(c: AppContext, config: any, form: any, re
     const resend = new Resend(resendApiKey)
 
     const formattedResponses = Object.entries(responses)
-      .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+      .map(([key, value]) => {
+        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+        return `<p><strong>${question}:</strong> ${value}</p>`
+      })
       .join('\n')
 
     const subject = subject_template
-      ? subject_template.replace('{form_name}', form.name)
-      : `New submission for ${form.name}`
+      ? subject_template.replace('{form_name}', form.title)
+      : `New submission for ${form.title}`
 
     await resend.emails.send({
       from: 'notifications@turboform.app',
@@ -104,7 +110,7 @@ async function processEmailIntegration(c: AppContext, config: any, form: any, re
       subject,
       html: `
         <h1>New Form Submission</h1>
-        <p>You have received a new submission for the form: <strong>${form.name}</strong></p>
+        <p>You have received a new submission for the form: <strong>${form.title}</strong></p>
         <h2>Responses:</h2>
         ${formattedResponses}
       `,
@@ -114,7 +120,7 @@ async function processEmailIntegration(c: AppContext, config: any, form: any, re
   }
 }
 
-async function processSlackIntegration(config: any, form: any, responses: Record<string, any>) {
+async function processSlackIntegration(config: any, form: Form, responses: Record<string, any>) {
   try {
     const { webhook_url, channels } = config
 
@@ -124,11 +130,14 @@ async function processSlackIntegration(config: any, form: any, responses: Record
     }
 
     const formattedResponses = Object.entries(responses)
-      .map(([key, value]) => `*${key}:* ${value}`)
+      .map(([key, value]) => {
+        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+        return `*${question}:* ${value}`
+      })
       .join('\n')
 
     const payload = {
-      text: `New submission for form: *${form.name}*`,
+      text: `New submission for form: *${form.title}*`,
       blocks: [
         {
           type: 'header',
@@ -141,7 +150,7 @@ async function processSlackIntegration(config: any, form: any, responses: Record
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `You have received a new submission for the form: *${form.name}*`,
+            text: `You have received a new submission for the form: *${form.title}*`,
           },
         },
         {
@@ -170,7 +179,7 @@ async function processSlackIntegration(config: any, form: any, responses: Record
   }
 }
 
-async function processTelegramIntegration(config: any, form: any, responses: Record<string, any>) {
+async function processTelegramIntegration(config: any, form: Form, responses: Record<string, any>) {
   try {
     const { bot_token, chat_id } = config
 
@@ -180,12 +189,15 @@ async function processTelegramIntegration(config: any, form: any, responses: Rec
     }
 
     const formattedResponses = Object.entries(responses)
-      .map(([key, value]) => `*${key}:* ${value}`)
+      .map(([key, value]) => {
+        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+        return `*${question}:* ${value}`
+      })
       .join('\n')
 
     const messageText = `
 *New Form Submission*
-You have received a new submission for the form: *${form.name}*
+You have received a new submission for the form: *${form.title}*
 
 *Responses:*
 ${formattedResponses}
@@ -211,7 +223,7 @@ ${formattedResponses}
   }
 }
 
-async function processZapierIntegration(config: any, form: any, responses: Record<string, any>) {
+async function processZapierIntegration(config: any, form: Form, responses: Record<string, any>) {
   try {
     const { webhook_url } = config
 
@@ -220,11 +232,18 @@ async function processZapierIntegration(config: any, form: any, responses: Recor
       return
     }
 
+    const formattedResponses: Record<string, string> = Object.entries(responses)
+      .reduce((acc, [key, value]) => {
+        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+        acc[question] = String(value)
+        return acc
+      }, {})
+
     const payload = {
       form_id: form.id,
-      form_name: form.name,
+      form_name: form.title,
       submission_date: new Date().toISOString(),
-      responses,
+      responses: formattedResponses,
     }
 
     const response = await axios.post(webhook_url, payload, {
@@ -239,7 +258,7 @@ async function processZapierIntegration(config: any, form: any, responses: Recor
   }
 }
 
-async function processMakeIntegration(config: any, form: any, responses: Record<string, any>) {
+async function processMakeIntegration(config: any, form: Form, responses: Record<string, any>) {
   try {
     const { webhook_url } = config
 
@@ -248,11 +267,18 @@ async function processMakeIntegration(config: any, form: any, responses: Record<
       return
     }
 
+    const formattedResponses: Record<string, string> = Object.entries(responses)
+      .reduce((acc, [key, value]) => {
+        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+        acc[question] = String(value)
+        return acc
+      }, {})
+
     const payload = {
       form_id: form.id,
-      form_name: form.name,
+      form_name: form.title,
       submission_date: new Date().toISOString(),
-      responses,
+      responses: formattedResponses,
     }
 
     const response = await axios.post(webhook_url, payload, {
@@ -267,7 +293,7 @@ async function processMakeIntegration(config: any, form: any, responses: Record<
   }
 }
 
-async function processWebhookIntegration(config: any, form: any, responses: Record<string, any>) {
+async function processWebhookIntegration(config: any, form: Form, responses: Record<string, any>) {
   try {
     const { url, method, headers, include_form_data } = config
 
@@ -280,11 +306,18 @@ async function processWebhookIntegration(config: any, form: any, responses: Reco
 
     if (include_form_data) {
       payload.form_id = form.id
-      payload.form_name = form.name
+      payload.form_name = form.title
       payload.submission_date = new Date().toISOString()
     }
 
-    payload.responses = responses
+    const formattedResponses: Record<string, string> = Object.entries(responses)
+      .reduce((acc, [key, value]) => {
+        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+        acc[question] = String(value)
+        return acc
+      }, {})
+
+    payload.responses = formattedResponses
 
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
