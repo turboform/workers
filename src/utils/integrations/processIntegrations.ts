@@ -103,7 +103,7 @@ async function processEmailIntegration(c: AppContext, config: any, form: Form, r
       ? subject_template.replace('{form_name}', form.title)
       : `New submission for ${form.title}`
 
-    await resend.emails.send({
+    const response = await resend.emails.send({
       from: 'notifications@turboform.app',
       to,
       cc: cc || [],
@@ -115,6 +115,8 @@ async function processEmailIntegration(c: AppContext, config: any, form: Form, r
         ${formattedResponses}
       `,
     })
+
+    console.log('Email response:', response.data)
   } catch (error) {
     console.error('Error sending email notification:', error)
   }
