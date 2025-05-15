@@ -81,7 +81,7 @@ async function processEmailIntegration(c: AppContext, config: any, form: any, re
       return
     }
 
-    const resendApiKey = process.env.RESEND_API_KEY
+    const resendApiKey = c.env.RESEND_API_KEY
     if (!resendApiKey) {
       console.error('Resend API key not configured')
       return
