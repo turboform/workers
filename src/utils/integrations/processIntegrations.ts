@@ -104,7 +104,7 @@ async function processEmailIntegration(c: AppContext, config: any, form: Form, r
       : `New submission for ${form.title}`
 
     const response = await resend.emails.send({
-      from: 'notifications@turboform.app',
+      from: 'notifications@mail.turboform.ai',
       to,
       cc: cc || [],
       subject,
@@ -197,12 +197,25 @@ async function processTelegramIntegration(config: any, form: Form, responses: Re
       })
       .join('\n')
 
+    // Escape backticks in the form title to prevent Telegram API issues
+    const formTitle = form.title.replace(/`/g, '\\`')
+    
+    // Prepare responses with escaped backticks
+    const escapedFormattedResponses = Object.entries(responses)
+      .map(([key, value]) => {
+        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+        const escapedQuestion = question.replace(/`/g, '\\`')
+        const escapedValue = String(value).replace(/`/g, '\\`')
+        return `*${escapedQuestion}:* ${escapedValue}`
+      })
+      .join('\n')
+    
     const messageText = `
 *New Form Submission*
-You have received a new submission for the form: *${form.title}*
+You have received a new submission for the form: *${formTitle}*
 
 *Responses:*
-${formattedResponses}
+${escapedFormattedResponses}
     `
 
     const response = await axios.post(
