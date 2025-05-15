@@ -1,3 +1,5 @@
+import { Json } from './database.types'
+
 export type IntegrationType = 'slack' | 'email' | 'telegram' | 'zapier' | 'make' | 'webhook'
 
 export interface BaseIntegrationConfig {
@@ -48,7 +50,7 @@ export interface FormIntegration {
   form_id: string
   integration_type: IntegrationType
   is_enabled: boolean
-  config: IntegrationConfig
+  config: IntegrationConfig | Json
   created_at?: string
   updated_at?: string
 }
