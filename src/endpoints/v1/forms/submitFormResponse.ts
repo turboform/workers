@@ -60,7 +60,7 @@ export class SubmitFormResponse extends OpenAPIRoute {
       }
 
       try {
-        await processIntegrations(c, formId, {}, responses)
+        await processIntegrations(c, formId, responses)
       } catch (integrationError) {
         console.error('Error processing integrations:', integrationError)
       }

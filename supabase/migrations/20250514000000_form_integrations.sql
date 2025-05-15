@@ -1,7 +1,12 @@
+-- Create enum type for integration types
+CREATE TYPE public.integration_type_enum AS ENUM (
+  'slack', 'email', 'telegram', 'zapier', 'make', 'webhook'
+);
+
 CREATE TABLE IF NOT EXISTS public.form_integrations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   form_id UUID REFERENCES public.forms(id) ON DELETE CASCADE NOT NULL,
-  integration_type TEXT NOT NULL, -- 'slack', 'email', 'telegram', 'zapier', 'make', 'webhook'
+  integration_type integration_type_enum NOT NULL,
   is_enabled BOOLEAN DEFAULT true,
   config JSONB NOT NULL, -- Configuration specific to the integration type
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

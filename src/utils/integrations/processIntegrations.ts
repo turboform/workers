@@ -1,14 +1,10 @@
 import { Resend } from 'resend'
+import axios from 'axios'
 import { IntegrationType, FormIntegration } from 'lib/types/integration'
 import type { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 
-export async function processIntegrations(
-  c: AppContext,
-  formId: string,
-  formData: any,
-  responses: Record<string, any>
-) {
+export async function processIntegrations(c: AppContext, formId: string, responses: Record<string, any>) {
   try {
     const { data: form, error: formError } = await supabaseAdminClient(c)
       .from('forms')
@@ -76,15 +72,10 @@ async function processIntegration(
   }
 }
 
-async function processEmailIntegration(
-  c: AppContext,
-  config: any,
-  form: any,
-  responses: Record<string, any>
-) {
+async function processEmailIntegration(c: AppContext, config: any, form: any, responses: Record<string, any>) {
   try {
     const { to, cc, subject_template } = config
-    
+
     if (!to || !Array.isArray(to) || to.length === 0) {
       console.error('Invalid email configuration: missing recipients')
       return
@@ -97,12 +88,12 @@ async function processEmailIntegration(
     }
 
     const resend = new Resend(resendApiKey)
-    
+
     const formattedResponses = Object.entries(responses)
       .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
       .join('\n')
 
-    const subject = subject_template 
+    const subject = subject_template
       ? subject_template.replace('{form_name}', form.name)
       : `New submission for ${form.name}`
 
@@ -123,14 +114,10 @@ async function processEmailIntegration(
   }
 }
 
-async function processSlackIntegration(
-  config: any,
-  form: any,
-  responses: Record<string, any>
-) {
+async function processSlackIntegration(config: any, form: any, responses: Record<string, any>) {
   try {
-    const { webhook_url, channel } = config
-    
+    const { webhook_url, channels } = config
+
     if (!webhook_url) {
       console.error('Invalid Slack configuration: missing webhook URL')
       return
@@ -168,36 +155,25 @@ async function processSlackIntegration(
           },
         },
       ],
+      channel: channels,
     }
 
-    if (channel) {
-      payload.channel = channel
-    }
-
-    const response = await fetch(webhook_url, {
-      method: 'POST',
+    const response = await axios.post(webhook_url, payload, {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
     })
 
-    if (!response.ok) {
-      throw new Error(`Slack API responded with status: ${response.status}`)
-    }
+    console.log('Slack response:', response.data)
   } catch (error) {
     console.error('Error sending Slack notification:', error)
   }
 }
 
-async function processTelegramIntegration(
-  config: any,
-  form: any,
-  responses: Record<string, any>
-) {
+async function processTelegramIntegration(config: any, form: any, responses: Record<string, any>) {
   try {
     const { bot_token, chat_id } = config
-    
+
     if (!bot_token || !chat_id) {
       console.error('Invalid Telegram configuration: missing bot token or chat ID')
       return
@@ -215,35 +191,30 @@ You have received a new submission for the form: *${form.name}*
 ${formattedResponses}
     `
 
-    const response = await fetch(`https://api.telegram.org/bot${bot_token}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const response = await axios.post(
+      `https://api.telegram.org/bot${bot_token}/sendMessage`,
+      {
         chat_id,
         text: messageText,
         parse_mode: 'Markdown',
-      }),
-    })
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(`Telegram API error: ${JSON.stringify(errorData)}`)
-    }
+    console.log('Telegram response:', response.data)
   } catch (error) {
     console.error('Error sending Telegram notification:', error)
   }
 }
 
-async function processZapierIntegration(
-  config: any,
-  form: any,
-  responses: Record<string, any>
-) {
+async function processZapierIntegration(config: any, form: any, responses: Record<string, any>) {
   try {
     const { webhook_url } = config
-    
+
     if (!webhook_url) {
       console.error('Invalid Zapier configuration: missing webhook URL')
       return
@@ -256,30 +227,22 @@ async function processZapierIntegration(
       responses,
     }
 
-    const response = await fetch(webhook_url, {
-      method: 'POST',
+    const response = await axios.post(webhook_url, payload, {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
     })
 
-    if (!response.ok) {
-      throw new Error(`Zapier webhook responded with status: ${response.status}`)
-    }
+    console.log('Zapier response:', response.data)
   } catch (error) {
     console.error('Error sending data to Zapier:', error)
   }
 }
 
-async function processMakeIntegration(
-  config: any,
-  form: any,
-  responses: Record<string, any>
-) {
+async function processMakeIntegration(config: any, form: any, responses: Record<string, any>) {
   try {
     const { webhook_url } = config
-    
+
     if (!webhook_url) {
       console.error('Invalid Make.com configuration: missing webhook URL')
       return
@@ -292,43 +255,35 @@ async function processMakeIntegration(
       responses,
     }
 
-    const response = await fetch(webhook_url, {
-      method: 'POST',
+    const response = await axios.post(webhook_url, payload, {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
     })
 
-    if (!response.ok) {
-      throw new Error(`Make.com webhook responded with status: ${response.status}`)
-    }
+    console.log('Make.com response:', response.data)
   } catch (error) {
     console.error('Error sending data to Make.com:', error)
   }
 }
 
-async function processWebhookIntegration(
-  config: any,
-  form: any,
-  responses: Record<string, any>
-) {
+async function processWebhookIntegration(config: any, form: any, responses: Record<string, any>) {
   try {
     const { url, method, headers, include_form_data } = config
-    
+
     if (!url || !method) {
       console.error('Invalid webhook configuration: missing URL or method')
       return
     }
 
     const payload: any = {}
-    
+
     if (include_form_data) {
       payload.form_id = form.id
       payload.form_name = form.name
       payload.submission_date = new Date().toISOString()
     }
-    
+
     payload.responses = responses
 
     const requestHeaders: Record<string, string> = {
@@ -336,15 +291,14 @@ async function processWebhookIntegration(
       ...headers,
     }
 
-    const response = await fetch(url, {
+    const response = await axios({
       method,
+      url,
       headers: requestHeaders,
-      body: JSON.stringify(payload),
+      data: payload,
     })
 
-    if (!response.ok) {
-      throw new Error(`Webhook responded with status: ${response.status}`)
-    }
+    console.log('Webhook response:', response.data)
   } catch (error) {
     console.error('Error sending data to webhook:', error)
   }

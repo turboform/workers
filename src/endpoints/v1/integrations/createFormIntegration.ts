@@ -44,12 +44,16 @@ export class CreateFormIntegration extends OpenAPIRoute {
         throw new HTTPException(400, { message: 'Missing required fields' })
       }
 
-      const { data, error } = await supabaseAdminClient(c).from('form_integrations').insert({
-        form_id,
-        integration_type,
-        is_enabled: is_enabled !== undefined ? is_enabled : true,
-        config,
-      }).select().single()
+      const { data, error } = await supabaseAdminClient(c)
+        .from('form_integrations')
+        .insert({
+          form_id,
+          integration_type,
+          is_enabled: is_enabled !== undefined ? is_enabled : true,
+          config,
+        })
+        .select()
+        .single()
 
       if (error) {
         console.error('Error creating form integration:', error)
