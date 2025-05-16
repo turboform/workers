@@ -1,7 +1,7 @@
 import { OpenAPIRoute } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
-import { supabaseAdminClient } from 'utils/clients/supabase/admin'
+import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { HTTPException } from 'hono/http-exception'
 
 export class GetFormIntegrations extends OpenAPIRoute {
@@ -35,7 +35,8 @@ export class GetFormIntegrations extends OpenAPIRoute {
         throw new HTTPException(400, { message: 'Form ID is required' })
       }
 
-      const { data: integrations, error } = await supabaseAdminClient(c)
+      const authToken = c.get('authToken')
+      const { data: integrations, error } = await supabaseApiClient(authToken, c)
         .from('form_integrations')
         .select('*')
         .eq('form_id', formId)

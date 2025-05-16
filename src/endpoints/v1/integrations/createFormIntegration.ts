@@ -1,8 +1,8 @@
 import { OpenAPIRoute } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
-import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { HTTPException } from 'hono/http-exception'
+import { supabaseApiClient } from 'utils/clients/supabase/api'
 
 export class CreateFormIntegration extends OpenAPIRoute {
   schema = {
@@ -44,7 +44,8 @@ export class CreateFormIntegration extends OpenAPIRoute {
         throw new HTTPException(400, { message: 'Missing required fields' })
       }
 
-      const { data, error } = await supabaseAdminClient(c)
+      const authToken = c.get('authToken')
+      const { data, error } = await supabaseApiClient(authToken, c)
         .from('form_integrations')
         .insert({
           form_id,

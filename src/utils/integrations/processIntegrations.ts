@@ -199,7 +199,7 @@ async function processTelegramIntegration(config: any, form: Form, responses: Re
 
     // Escape backticks in the form title to prevent Telegram API issues
     const formTitle = form.title.replace(/`/g, '\\`')
-    
+
     // Prepare responses with escaped backticks
     const escapedFormattedResponses = Object.entries(responses)
       .map(([key, value]) => {
@@ -209,7 +209,7 @@ async function processTelegramIntegration(config: any, form: Form, responses: Re
         return `*${escapedQuestion}:* ${escapedValue}`
       })
       .join('\n')
-    
+
     const messageText = `
 *New Form Submission*
 You have received a new submission for the form: *${formTitle}*
@@ -247,12 +247,11 @@ async function processZapierIntegration(config: any, form: Form, responses: Reco
       return
     }
 
-    const formattedResponses: Record<string, string> = Object.entries(responses)
-      .reduce((acc, [key, value]) => {
-        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
-        acc[question] = String(value)
-        return acc
-      }, {})
+    const formattedResponses: Record<string, string> = Object.entries(responses).reduce((acc, [key, value]) => {
+      const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+      acc[question] = String(value)
+      return acc
+    }, {})
 
     const payload = {
       form_id: form.id,
@@ -282,12 +281,11 @@ async function processMakeIntegration(config: any, form: Form, responses: Record
       return
     }
 
-    const formattedResponses: Record<string, string> = Object.entries(responses)
-      .reduce((acc, [key, value]) => {
-        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
-        acc[question] = String(value)
-        return acc
-      }, {})
+    const formattedResponses: Record<string, string> = Object.entries(responses).reduce((acc, [key, value]) => {
+      const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+      acc[question] = String(value)
+      return acc
+    }, {})
 
     const payload = {
       form_id: form.id,
@@ -325,12 +323,11 @@ async function processWebhookIntegration(config: any, form: Form, responses: Rec
       payload.submission_date = new Date().toISOString()
     }
 
-    const formattedResponses: Record<string, string> = Object.entries(responses)
-      .reduce((acc, [key, value]) => {
-        const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
-        acc[question] = String(value)
-        return acc
-      }, {})
+    const formattedResponses: Record<string, string> = Object.entries(responses).reduce((acc, [key, value]) => {
+      const question = ((form?.schema as any[]) || [])?.find((q) => q.id === key)?.label || key
+      acc[question] = String(value)
+      return acc
+    }, {})
 
     payload.responses = formattedResponses
 

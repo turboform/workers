@@ -1,8 +1,8 @@
 import { OpenAPIRoute } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
-import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { HTTPException } from 'hono/http-exception'
+import { supabaseApiClient } from 'utils/clients/supabase/api'
 
 export class DeleteFormIntegration extends OpenAPIRoute {
   schema = {
@@ -35,7 +35,8 @@ export class DeleteFormIntegration extends OpenAPIRoute {
         throw new HTTPException(400, { message: 'Integration ID is required' })
       }
 
-      const { error } = await supabaseAdminClient(c).from('form_integrations').delete().eq('id', id)
+      const authToken = c.get('authToken')
+      const { error } = await supabaseApiClient(authToken, c).from('form_integrations').delete().eq('id', id)
 
       if (error) {
         console.error('Error deleting form integration:', error)
