@@ -43,7 +43,7 @@ export class DeleteFormIntegration extends OpenAPIRoute {
         throw new HTTPException(500, { message: 'Failed to delete form integration' })
       }
 
-      return { success: true }
+      return c.json({ success: true })
     } catch (error) {
       if (error instanceof HTTPException) {
         throw error

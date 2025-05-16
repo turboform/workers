@@ -61,7 +61,7 @@ export class CreateFormIntegration extends OpenAPIRoute {
         throw new HTTPException(500, { message: 'Failed to create form integration' })
       }
 
-      return { integration: data }
+      return c.json({ integration: data })
     } catch (error) {
       if (error instanceof HTTPException) {
         throw error

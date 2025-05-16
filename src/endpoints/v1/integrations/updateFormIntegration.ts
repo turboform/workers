@@ -65,7 +65,7 @@ export class UpdateFormIntegration extends OpenAPIRoute {
         throw new HTTPException(500, { message: 'Failed to update form integration' })
       }
 
-      return { integration: data }
+      return c.json({ integration: data })
     } catch (error) {
       if (error instanceof HTTPException) {
         throw error

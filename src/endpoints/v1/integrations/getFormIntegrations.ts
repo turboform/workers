@@ -46,7 +46,7 @@ export class GetFormIntegrations extends OpenAPIRoute {
         throw new HTTPException(500, { message: 'Failed to fetch form integrations' })
       }
 
-      return { integrations }
+      return c.json({ integrations })
     } catch (error) {
       if (error instanceof HTTPException) {
         throw error
