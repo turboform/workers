@@ -19,6 +19,10 @@ import { GetFormResponses } from 'endpoints/v1/responses/getFormResponses'
 import { LinkAnonymousData } from 'endpoints/v1/auth/linkAnonymousData'
 import { SendContactEmail } from 'endpoints/v1/contact/sendContactEmail'
 import { DeleteForm } from 'endpoints/v1/forms/deleteForm'
+import { GetFormIntegrations } from 'endpoints/v1/integrations/getFormIntegrations'
+import { CreateFormIntegration } from 'endpoints/v1/integrations/createFormIntegration'
+import { UpdateFormIntegration } from 'endpoints/v1/integrations/updateFormIntegration'
+import { DeleteFormIntegration } from 'endpoints/v1/integrations/deleteFormIntegration'
 import { requireAuth } from 'utils/auth/middleware'
 import { HTTPException } from 'hono/http-exception'
 
@@ -102,6 +106,15 @@ openapi.delete('/api/v1/form/:id', DeleteForm)
 // Response endpoints
 openapi.use('/api/v1/response/*', requireAuth)
 openapi.get('/api/v1/response/:formId', GetFormResponses)
+
+// Integration endpoints
+openapi.use('/api/v1/integrations', requireAuth)
+openapi.post('/api/v1/integrations', CreateFormIntegration)
+openapi.use('/api/v1/integrations/:id', requireAuth)
+openapi.put('/api/v1/integrations/:id', UpdateFormIntegration)
+openapi.delete('/api/v1/integrations/:id', DeleteFormIntegration)
+openapi.use('/api/v1/form/:formId/integrations', requireAuth)
+openapi.get('/api/v1/form/:formId/integrations', GetFormIntegrations)
 
 // Auth endpoints
 openapi.use('/api/v1/auth/link-anonymous-data', requireAuth)

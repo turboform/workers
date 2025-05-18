@@ -7,10 +7,11 @@
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "cf-typegen": "wrangler types",
-    "gen-db-types": "npx supabase gen types typescript --project-id krleqnhlvnyqtkqoyogw --schema public > src/lib/types/database.types.ts"
+    "gen-db-types": "npx supabase gen types typescript --linked --schema public > src/lib/types/database.types.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.49.4",
+    "axios": "^1.9.0",
     "chanfana": "^2.0.2",
     "crypto": "1.0.1",
     "hono": "^4.4.7",

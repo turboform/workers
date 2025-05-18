@@ -3,6 +3,44 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      form_integrations: {
+        Row: {
+          config: Json
+          created_at: string | null
+          form_id: string
+          id: string
+          integration_type: Database['public']['Enums']['integration_type_enum']
+          is_enabled: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          config: Json
+          created_at?: string | null
+          form_id: string
+          id?: string
+          integration_type: Database['public']['Enums']['integration_type_enum']
+          is_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          form_id?: string
+          id?: string
+          integration_type?: Database['public']['Enums']['integration_type_enum']
+          is_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'form_integrations_form_id_fkey'
+            columns: ['form_id']
+            isOneToOne: false
+            referencedRelation: 'forms'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       form_responses: {
         Row: {
           created_at: string | null
@@ -278,6 +316,7 @@ export type Database = {
       }
     }
     Enums: {
+      integration_type_enum: 'slack' | 'email' | 'telegram' | 'zapier' | 'make' | 'webhook'
       pricing_plan_interval: 'month' | 'year'
       pricing_type: 'one_time' | 'recurring'
       subscription_status: 'active' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'unpaid'
@@ -386,6 +425,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      integration_type_enum: ['slack', 'email', 'telegram', 'zapier', 'make', 'webhook'],
       pricing_plan_interval: ['month', 'year'],
       pricing_type: ['one_time', 'recurring'],
       subscription_status: ['active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid'],

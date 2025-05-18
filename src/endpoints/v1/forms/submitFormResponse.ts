@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { HTTPException } from 'hono/http-exception'
+import { processIntegrations } from 'utils/integrations/processIntegrations'
 
 export class SubmitFormResponse extends OpenAPIRoute {
   schema = {
@@ -56,6 +57,12 @@ export class SubmitFormResponse extends OpenAPIRoute {
       if (error) {
         console.error('Error submitting form response:', error)
         throw new HTTPException(500, { message: 'Failed to submit form response' })
+      }
+
+      try {
+        await processIntegrations(c, formId, responses)
+      } catch (integrationError) {
+        console.error('Error processing integrations:', integrationError)
       }
 
       return {
