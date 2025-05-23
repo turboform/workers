@@ -19,6 +19,10 @@ export class UpdateForm extends OpenAPIRoute {
               title: z.string().describe('Form title'),
               description: z.string().describe('Form description'),
               schema: z.any().describe('Form schema/structure'),
+              expires_at: z.string().nullable().optional().describe('When the form expires'),
+              primaryColor: z.string().nullable().optional().describe('Primary color for form styling (hex code)'),
+              secondaryColor: z.string().nullable().optional().describe('Secondary color for form styling (hex code)'),
+              logoUrl: z.string().nullable().optional().describe('URL to the form logo image'),
             }),
           },
         },
@@ -62,7 +66,7 @@ export class UpdateForm extends OpenAPIRoute {
       }
 
       // Get the form data from the request
-      const { title, description, schema, expires_at } = await c.req.json()
+      const { title, description, schema, expires_at, primaryColor, secondaryColor, logoUrl } = await c.req.json()
 
       // Update the form
       const { data, error: updateError } = await supabaseApiClient(authToken, c)
@@ -73,6 +77,9 @@ export class UpdateForm extends OpenAPIRoute {
           schema,
           expires_at: expires_at || null,
           updated_at: new Date().toISOString(),
+          primary_color: primaryColor || null,
+          secondary_color: secondaryColor || null,
+          logo_url: logoUrl || null
         })
         .eq('id', formId)
         .select()

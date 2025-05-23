@@ -28,6 +28,9 @@ export class CreateForm extends OpenAPIRoute {
               description: Str({ description: 'Form description' }),
               schema: z.any({ description: 'Form schema/structure' }),
               expires_at: z.string().nullable().optional().describe('When the form expires'),
+              primaryColor: z.string().nullable().optional().describe('Primary color for form styling (hex code)'),
+              secondaryColor: z.string().nullable().optional().describe('Secondary color for form styling (hex code)'),
+              logoUrl: z.string().nullable().optional().describe('URL to the form logo image'),
             }),
           },
         },
@@ -53,7 +56,7 @@ export class CreateForm extends OpenAPIRoute {
       const authToken = c.get('authToken')
 
       // Parse the request body
-      const { title, description, schema, expires_at } = await c.req.json()
+      const { title, description, schema, expires_at, primaryColor, secondaryColor, logoUrl } = await c.req.json()
 
       // Generate a unique short ID
       const short_id = generateShortId()
@@ -68,6 +71,9 @@ export class CreateForm extends OpenAPIRoute {
           schema,
           short_id,
           expires_at: expires_at || null,
+          primary_color: primaryColor || null,
+          secondary_color: secondaryColor || null,
+          logo_url: logoUrl || null
         })
         .select()
         .single()
