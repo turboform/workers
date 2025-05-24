@@ -1,9 +1,8 @@
-import { OpenAPIRoute, Str } from 'chanfana'
+import { OpenAPIRoute } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { HTTPException } from 'hono/http-exception'
-import { supportedImageTypes } from 'lib/types/supported-image-types'
 
 export const LOGOS_BUCKET = 'form-logos'
 
@@ -83,11 +82,11 @@ export class UploadFormLogo extends OpenAPIRoute {
       }
 
       const formData = await c.req.formData()
-      const file = formData.get('file') as unknown as { 
-        arrayBuffer: () => Promise<ArrayBuffer>; 
-        size: number; 
-        type: string; 
-        name: string; 
+      const file = formData.get('file') as unknown as {
+        arrayBuffer: () => Promise<ArrayBuffer>
+        size: number
+        type: string
+        name: string
       }
 
       if (!file) {
@@ -106,12 +105,11 @@ export class UploadFormLogo extends OpenAPIRoute {
 
       const arrayBuffer = await file.arrayBuffer()
 
-      const { data: uploadData, error: uploadError } = await supabaseAdminClient(c)
-        .storage
-        .from(LOGOS_BUCKET)
+      const { error: uploadError } = await supabaseAdminClient(c)
+        .storage.from(LOGOS_BUCKET)
         .upload(filePath, arrayBuffer, {
           contentType: file.type,
-          upsert: true
+          upsert: true,
         })
 
       if (uploadError) {
@@ -119,26 +117,10 @@ export class UploadFormLogo extends OpenAPIRoute {
         throw new HTTPException(500, { message: 'Failed to upload logo' })
       }
 
-      const { data: urlData } = await supabaseAdminClient(c)
-        .storage
-        .from(LOGOS_BUCKET)
-        .getPublicUrl(filePath)
-
-      const { error: updateError } = await supabaseAdminClient(c)
-        .from('forms')
-        .update({
-          logo_url: urlData.publicUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', formId)
-
-      if (updateError) {
-        console.error('Error updating form with logo URL:', updateError)
-        throw new HTTPException(500, { message: 'Failed to update form with logo URL' })
-      }
+      const { data: urlData } = supabaseAdminClient(c).storage.from(LOGOS_BUCKET).getPublicUrl(filePath)
 
       return c.json({
-        logoUrl: urlData.publicUrl
+        logoUrl: urlData.publicUrl,
       })
     } catch (error) {
       if (error instanceof HTTPException) {
