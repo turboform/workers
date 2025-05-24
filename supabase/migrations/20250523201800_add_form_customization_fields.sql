@@ -1,6 +1,6 @@
 ALTER TABLE forms 
-  ADD COLUMN IF NOT EXISTS primary_color TEXT,
-  ADD COLUMN IF NOT EXISTS secondary_color TEXT,
+  ADD COLUMN IF NOT EXISTS primary_color VARCHAR(10),
+  ADD COLUMN IF NOT EXISTS secondary_color VARCHAR(10),
   ADD COLUMN IF NOT EXISTS logo_url TEXT;
 
 COMMENT ON COLUMN forms.primary_color IS 'Primary color for form styling (hex code)';

@@ -73,7 +73,7 @@ export class CreateForm extends OpenAPIRoute {
           expires_at: expires_at || null,
           primary_color: primaryColor || null,
           secondary_color: secondaryColor || null,
-          logo_url: logoUrl || null
+          logo_url: logoUrl || null,
         })
         .select()
         .single()

@@ -79,7 +79,7 @@ export class UpdateForm extends OpenAPIRoute {
           updated_at: new Date().toISOString(),
           primary_color: primaryColor || null,
           secondary_color: secondaryColor || null,
-          logo_url: logoUrl || null
+          logo_url: logoUrl || null,
         })
         .eq('id', formId)
         .select()
