@@ -11,19 +11,6 @@ export class UploadFormLogo extends OpenAPIRoute {
   schema = {
     tags: ['Forms'],
     summary: 'Upload a logo for a form',
-    security: [{ BearerAuth: [] }],
-    parameters: [
-      {
-        name: 'id',
-        in: 'path',
-        required: true,
-        schema: {
-          type: 'string',
-          format: 'uuid',
-        },
-        description: 'Form ID',
-      },
-    ],
     request: {
       body: {
         content: {
