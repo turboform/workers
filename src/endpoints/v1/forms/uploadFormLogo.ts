@@ -81,8 +81,8 @@ export class UploadFormLogo extends OpenAPIRoute {
         throw new HTTPException(403, { message: 'Form not found or access denied' })
       }
 
-      const formData = await c.req.formData()
-      const file = formData.get('file') as unknown as {
+      const body = await c.req.parseBody()
+      const file = body['file'] as unknown as {
         arrayBuffer: () => Promise<ArrayBuffer>
         size: number
         type: string
