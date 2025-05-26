@@ -23,6 +23,7 @@ import { GetFormIntegrations } from 'endpoints/v1/integrations/getFormIntegratio
 import { CreateFormIntegration } from 'endpoints/v1/integrations/createFormIntegration'
 import { UpdateFormIntegration } from 'endpoints/v1/integrations/updateFormIntegration'
 import { DeleteFormIntegration } from 'endpoints/v1/integrations/deleteFormIntegration'
+import { UploadFormLogo } from 'endpoints/v1/forms/uploadFormLogo'
 import { requireAuth } from 'utils/auth/middleware'
 import { HTTPException } from 'hono/http-exception'
 
@@ -102,6 +103,9 @@ openapi.use('/api/v1/forms', requireAuth)
 openapi.get('/api/v1/forms', GetForms)
 openapi.use('/api/v1/form/:id', requireAuth)
 openapi.delete('/api/v1/form/:id', DeleteForm)
+
+openapi.use('/api/v1/form/:id/logo', requireAuth)
+openapi.post('/api/v1/form/:id/logo', UploadFormLogo)
 
 // Response endpoints
 openapi.use('/api/v1/response/*', requireAuth)

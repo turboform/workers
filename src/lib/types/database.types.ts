@@ -81,7 +81,10 @@ export type Database = {
           id: string
           is_draft: boolean | null
           is_public: boolean | null
+          logo_url: string | null
+          primary_color: string | null
           schema: Json
+          secondary_color: string | null
           short_id: string | null
           title: string
           updated_at: string | null
@@ -94,7 +97,10 @@ export type Database = {
           id?: string
           is_draft?: boolean | null
           is_public?: boolean | null
+          logo_url?: string | null
+          primary_color?: string | null
           schema: Json
+          secondary_color?: string | null
           short_id?: string | null
           title: string
           updated_at?: string | null
@@ -107,7 +113,10 @@ export type Database = {
           id?: string
           is_draft?: boolean | null
           is_public?: boolean | null
+          logo_url?: string | null
+          primary_color?: string | null
           schema?: Json
+          secondary_color?: string | null
           short_id?: string | null
           title?: string
           updated_at?: string | null
