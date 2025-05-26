@@ -32,36 +32,6 @@ export class UploadFormLogo extends OpenAPIRoute {
           },
         },
       },
-      '400': {
-        description: 'Invalid request',
-        content: {
-          'application/json': {
-            schema: z.object({
-              error: z.string(),
-            }),
-          },
-        },
-      },
-      '401': {
-        description: 'Unauthorized',
-        content: {
-          'application/json': {
-            schema: z.object({
-              error: z.string(),
-            }),
-          },
-        },
-      },
-      '403': {
-        description: 'Forbidden',
-        content: {
-          'application/json': {
-            schema: z.object({
-              error: z.string(),
-            }),
-          },
-        },
-      },
     },
   }
 

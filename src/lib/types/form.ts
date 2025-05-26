@@ -19,7 +19,7 @@ export interface Form {
   expires_at?: string
   is_public?: boolean
   is_draft?: boolean
-  primaryColor?: string
-  secondaryColor?: string
-  logoUrl?: string
+  primary_color?: string
+  secondary_color?: string
+  logo_url?: string
 }
