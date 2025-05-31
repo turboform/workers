@@ -24,6 +24,8 @@ import { CreateFormIntegration } from 'endpoints/v1/integrations/createFormInteg
 import { UpdateFormIntegration } from 'endpoints/v1/integrations/updateFormIntegration'
 import { DeleteFormIntegration } from 'endpoints/v1/integrations/deleteFormIntegration'
 import { UploadFormLogo } from 'endpoints/v1/forms/uploadFormLogo'
+import { ChatWithResponses } from 'endpoints/v1/chat/chatWithResponses'
+import { GetConversations, GetConversationMessages, DeleteConversation } from 'endpoints/v1/chat/conversations'
 import { requireAuth } from 'utils/auth/middleware'
 import { HTTPException } from 'hono/http-exception'
 
@@ -110,6 +112,18 @@ openapi.post('/api/v1/form/:id/logo', UploadFormLogo)
 // Response endpoints
 openapi.use('/api/v1/response/*', requireAuth)
 openapi.get('/api/v1/response/:formId', GetFormResponses)
+
+// Chat endpoints
+openapi.use('/api/v1/chat/form-responses', requireAuth)
+openapi.post('/api/v1/chat/form-responses', ChatWithResponses)
+
+// Chat conversation endpoints
+openapi.use('/api/v1/chat/conversations/:formId', requireAuth)
+openapi.get('/api/v1/chat/conversations/:formId', GetConversations)
+openapi.use('/api/v1/chat/conversation/:conversationId/messages', requireAuth)
+openapi.get('/api/v1/chat/conversation/:conversationId/messages', GetConversationMessages)
+openapi.use('/api/v1/chat/conversation/:conversationId', requireAuth)
+openapi.delete('/api/v1/chat/conversation/:conversationId', DeleteConversation)
 
 // Integration endpoints
 openapi.use('/api/v1/integrations', requireAuth)
