@@ -12,6 +12,7 @@ export type Env = {
   CHECKOUT_CANCEL_REDIRECT_URL: string
   OPENAI_API_KEY: string
   RESEND_API_KEY: string
+  FORM_SUBMISSION_SECRET: string
 }
 
 export type AppContext = Context<{
