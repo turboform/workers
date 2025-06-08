@@ -37,6 +37,9 @@ export class SubmitFormResponse extends OpenAPIRoute {
 
   async handle(c: AppContext) {
     try {
+      const timestamp = c.req.header('X-Turboform-Timestamp')
+      const signature = c.req.header('X-Turboform-Signature')
+
       const { formId, responses } = await c.req.json()
 
       if (!formId) {
@@ -45,6 +48,16 @@ export class SubmitFormResponse extends OpenAPIRoute {
 
       if (!responses || typeof responses !== 'object') {
         throw new HTTPException(400, { message: 'Responses are required and must be an object' })
+      }
+
+      // Validate request signature
+      if (!(await this.validateRequestSignature(c, formId, timestamp, signature))) {
+        throw new HTTPException(403, { message: 'Invalid or missing signature' })
+      }
+
+      // Check for timestamp freshness (within 5 minutes)
+      if (!timestamp || !this.isTimestampValid(timestamp)) {
+        throw new HTTPException(403, { message: 'Request expired or invalid timestamp' })
       }
 
       // Check if the form exists and is not a draft
@@ -77,5 +90,70 @@ export class SubmitFormResponse extends OpenAPIRoute {
       console.error('Error in submitFormResponse:', error)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
+  }
+
+  private async validateRequestSignature(
+    c: AppContext,
+    formId: string,
+    timestamp?: string,
+    signature?: string
+  ): Promise<boolean> {
+    if (!formId || !timestamp || !signature || !c.env.FORM_SUBMISSION_SECRET) {
+      return false
+    }
+
+    try {
+      // Recreate the signature using Web Crypto API (available in Workers)
+      const dataToSign = `${formId}:${timestamp}:${c.env.FORM_SUBMISSION_SECRET}`
+      const encoder = new TextEncoder()
+      const keyData = encoder.encode(c.env.FORM_SUBMISSION_SECRET)
+      const dataToSignEncoded = encoder.encode(dataToSign)
+
+      const cryptoKey = await globalThis.crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      )
+
+      const signatureBuffer = await globalThis.crypto.subtle.sign('HMAC', cryptoKey, dataToSignEncoded)
+
+      // Convert to hex string
+      const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+
+      return this.timingSafeEqual(signature, expectedSignature)
+    } catch (error) {
+      console.error('Error validating signature:', error)
+      return false
+    }
+  }
+
+  private timingSafeEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) {
+      return false
+    }
+
+    let result = 0
+    for (let i = 0; i < a.length; i++) {
+      result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+    }
+
+    return result === 0
+  }
+
+  // Helper method to check if timestamp is within valid window (5 minutes)
+  private isTimestampValid(timestamp: string): boolean {
+    const requestTime = parseInt(timestamp, 10)
+    if (isNaN(requestTime)) {
+      return false
+    }
+
+    const currentTime = Date.now()
+    const fiveMinutesMs = 5 * 60 * 1000
+
+    return currentTime - requestTime <= fiveMinutesMs
   }
 }
