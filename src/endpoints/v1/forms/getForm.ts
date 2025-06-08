@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 export class GetForm extends OpenAPIRoute {
   schema = {
@@ -56,7 +57,7 @@ export class GetForm extends OpenAPIRoute {
         .eq('form_id', formId)
 
       if (countError) {
-        console.error('Error counting responses:', countError)
+        Logger.error('Error counting responses', countError, c)
       } else {
         // Add response count to form as a new property
         ;(form as any).responseCount = count || 0
@@ -68,7 +69,7 @@ export class GetForm extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in getForm:', error)
+      Logger.error('Error in getForm', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

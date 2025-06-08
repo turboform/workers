@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { openAIClient } from 'utils/clients/openai'
+import { Logger } from 'utils/error-handling'
 
 // Default batch size for processing
 const DEFAULT_BATCH_SIZE = 20
@@ -57,7 +58,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
   async handle(c: AppContext) {
     try {
       // Parse request
-      console.log('Processing embeddings...')
+      Logger.info('Processing embeddings...', c)
       const body = await c.req.json()
       const { max_batch_size } = ProcessRequestSchema.parse(body)
 
@@ -72,13 +73,13 @@ export class ProcessEmbeddings extends OpenAPIRoute {
       })
 
       if (queueError) {
-        console.error('Failed to read from queue:', queueError)
+        Logger.error('Failed to read from queue', queueError, c)
         throw new Error(`Failed to read from queue: ${queueError.message}`)
       }
 
-      console.log(`Read ${queueMessages?.length || 0} messages from the queue`)
+      Logger.info(`Read ${queueMessages?.length || 0} messages from the queue`, c)
       if (!queueMessages || queueMessages.length === 0) {
-        console.log('No messages found in the queue')
+        Logger.info('No messages found in the queue', c)
         return c.json({
           success: true,
           processed: 0,
@@ -104,7 +105,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
           try {
             // Parse the message data
             const job = EmbeddingJobSchema.parse(msg.message)
-            console.log(`Processing embedding for form response: ${job.id}`)
+            Logger.info(`Processing embedding for form response: ${job.id}`, c)
 
             // Generate embedding
             const embedding = await generateOpenAIEmbedding(c, job.text)
@@ -116,12 +117,12 @@ export class ProcessEmbeddings extends OpenAPIRoute {
               .eq('id', job.id)
 
             if (updateError) {
-              console.error(`Failed to update form response ${job.id}:`, updateError)
+              Logger.error(`Failed to update form response ${job.id}`, updateError, c)
               throw new Error(`Failed to update form response: ${updateError.message}`)
             }
 
             // Mark as successfully processed
-            console.log(`Successfully processed embedding for form response: ${job.id}`)
+            Logger.info(`Successfully processed embedding for form response: ${job.id}`, c)
             processedMsgIds.push(msg.msg_id)
             results.processed++
           } catch (error) {
@@ -146,19 +147,19 @@ export class ProcessEmbeddings extends OpenAPIRoute {
 
       // Delete successfully processed messages in a single operation
       if (processedMsgIds.length > 0) {
-        console.log(`Deleting ${processedMsgIds.length} processed messages from the queue`)
+        Logger.info(`Deleting ${processedMsgIds.length} processed messages from the queue`, c)
         processedMsgIds.forEach(async (msgId) => {
-          console.log(`Deleting message: ${msgId}`)
+          Logger.info(`Deleting message: ${msgId}`, c)
           const { data, error: deleteError } = await supabase.schema('pgmq_public' as any).rpc('delete', {
             queue_name: 'form_response_embeddings',
             message_id: msgId,
           })
 
           if (!!deleteError) {
-            console.error('Failed to delete message:', deleteError)
+            Logger.error('Failed to delete message', deleteError, c)
           }
 
-          console.log('Deleted message data:', data)
+          Logger.info('Deleted message data:', c, { data })
         })
       }
 
@@ -185,7 +186,7 @@ export class ProcessEmbeddings extends OpenAPIRoute {
 async function generateOpenAIEmbedding(c: AppContext, text: string): Promise<number[]> {
   const openai = openAIClient(c.env.OPENAI_API_KEY)
 
-  console.log('Generating embedding for:', text)
+  Logger.info('Generating embedding for:', c, { text })
   const response = await openai.embeddings.create({
     model: 'text-embedding-3-small',
     input: text,

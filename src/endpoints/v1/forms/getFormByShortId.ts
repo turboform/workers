@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 export class GetFormByShortId extends OpenAPIRoute {
   schema = {
@@ -62,7 +63,7 @@ export class GetFormByShortId extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in getFormByShortId:', error)
+      Logger.error('Error in getFormByShortId', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

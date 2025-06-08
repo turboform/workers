@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { HTTPException } from 'hono/http-exception'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
+import { Logger } from 'utils/error-handling'
 
 export class DeleteFormIntegration extends OpenAPIRoute {
   schema = {
@@ -39,7 +40,7 @@ export class DeleteFormIntegration extends OpenAPIRoute {
       const { error } = await supabaseApiClient(authToken, c).from('form_integrations').delete().eq('id', id)
 
       if (error) {
-        console.error('Error deleting form integration:', error)
+        Logger.error('Error deleting form integration', error, c)
         throw new HTTPException(500, { message: 'Failed to delete form integration' })
       }
 
@@ -49,7 +50,7 @@ export class DeleteFormIntegration extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in deleteFormIntegration:', error)
+      Logger.error('Error in deleteFormIntegration', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }
