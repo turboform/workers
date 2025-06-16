@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 export const LOGOS_BUCKET = 'form-logos'
 
@@ -83,7 +84,7 @@ export class UploadFormLogo extends OpenAPIRoute {
         })
 
       if (uploadError) {
-        console.error('Error uploading logo:', uploadError)
+        Logger.error('Error uploading logo', uploadError, c)
         throw new HTTPException(500, { message: 'Failed to upload logo' })
       }
 
@@ -96,7 +97,7 @@ export class UploadFormLogo extends OpenAPIRoute {
       if (error instanceof HTTPException) {
         throw error
       }
-      console.error('Error in uploadFormLogo:', error)
+      Logger.error('Error in uploadFormLogo', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

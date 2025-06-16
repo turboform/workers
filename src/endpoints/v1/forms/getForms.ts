@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 export class GetForms extends OpenAPIRoute {
   schema = {
@@ -34,7 +35,7 @@ export class GetForms extends OpenAPIRoute {
         .order('created_at', { ascending: false })
 
       if (dbError) {
-        console.error('Error getting forms:', dbError)
+        Logger.error('Error getting forms', dbError, c)
         throw new HTTPException(500, { message: 'Failed to get forms' })
       }
 
@@ -76,7 +77,7 @@ export class GetForms extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in getForms:', error)
+      Logger.error('Error in getForms', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

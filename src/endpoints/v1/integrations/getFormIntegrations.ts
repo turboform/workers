@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 export class GetFormIntegrations extends OpenAPIRoute {
   schema = {
@@ -42,7 +43,7 @@ export class GetFormIntegrations extends OpenAPIRoute {
         .eq('form_id', formId)
 
       if (error) {
-        console.error('Error fetching form integrations:', error)
+        Logger.error('Error fetching form integrations', error, c)
         throw new HTTPException(500, { message: 'Failed to fetch form integrations' })
       }
 
@@ -52,7 +53,7 @@ export class GetFormIntegrations extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in getFormIntegrations:', error)
+      Logger.error('Error in getFormIntegrations', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

@@ -4,6 +4,7 @@ import { supportedImageTypes } from 'lib/types/supported-image-types'
 import { stripeClient } from 'utils/clients/stripe'
 import { Database } from 'lib/types/database.types'
 import { AppContext } from 'lib/types/app-context'
+import { Logger } from 'utils/error-handling'
 
 type Subscription = Database['public']['Tables']['subscriptions']['Row']
 
@@ -35,7 +36,7 @@ export const manageSubscriptionStatusChange = async (
     .single()
 
   if (noCustomerError) {
-    console.error(`Customer with Stripe ID ${customerId} not found.`)
+    Logger.error(`Customer with Stripe ID ${customerId} not found.`, noCustomerError, c)
     return
   }
 
@@ -73,9 +74,9 @@ export const manageSubscriptionStatusChange = async (
     ])
 
   if (error) {
-    console.error(`An error occurred while saving subscription: ${error.message}`)
+    Logger.error(`An error occurred while saving subscription: ${error.message}`, error, c)
   } else {
-    console.log(`Saved subscription ${subscription.id} for user ${data.user_id}`)
+    Logger.info(`Saved subscription ${subscription.id} for user ${data.user_id}`, c)
   }
 
   if (createAction && subscription.default_payment_method) {
@@ -96,7 +97,7 @@ export const updateStripeUserDetails = async (
     .single()
 
   if (noCustomerError) {
-    console.error(`Customer with Stripe ID ${customerId} not found.`)
+    Logger.error(`Customer with Stripe ID ${customerId} not found.`, noCustomerError, c)
     return
   }
 
@@ -111,7 +112,11 @@ export const updateStripeUserDetails = async (
       .eq('id', data.user_id)
 
     if (updatePaymentMethodError) {
-      console.error(`An error occurred while updating payment method: ${updatePaymentMethodError.message}`)
+      Logger.error(
+        `An error occurred while updating payment method: ${updatePaymentMethodError.message}`,
+        updatePaymentMethodError,
+        c
+      )
     }
   }
 
@@ -124,7 +129,7 @@ export const updateStripeUserDetails = async (
       .eq('id', data.user_id)
 
     if (error) {
-      console.error(`An error occurred while updating user details: ${error.message}`)
+      Logger.error(`An error occurred while updating user details: ${error.message}`, error, c)
     }
   }
 }
@@ -175,7 +180,7 @@ const copyBillingDetailsToCustomer = async (
       .eq('id', uuid)
 
     if (error) {
-      console.error(`An error occurred while updating user details: ${error.message}`)
+      Logger.error(`An error occurred while updating user details: ${error.message}`, error, c)
     }
   }
 }

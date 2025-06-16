@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { HTTPException } from 'hono/http-exception'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
+import { Logger } from 'utils/error-handling'
 
 export class PublishForm extends OpenAPIRoute {
   schema = {
@@ -70,7 +71,7 @@ export class PublishForm extends OpenAPIRoute {
         .single()
 
       if (updateError) {
-        console.error('Error updating form status:', updateError)
+        Logger.error('Error updating form status', updateError, c)
         throw new HTTPException(500, { message: 'Failed to update form status' })
       }
 
@@ -83,7 +84,7 @@ export class PublishForm extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in publishForm:', error)
+      Logger.error('Error in publishForm', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

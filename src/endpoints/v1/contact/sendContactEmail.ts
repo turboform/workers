@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { HTTPException } from 'hono/http-exception'
 import { Resend } from 'resend'
+import { Logger } from 'utils/error-handling'
 
 export class SendContactEmail extends OpenAPIRoute {
   schema = {
@@ -81,7 +82,7 @@ ${message}
       })
 
       if (error) {
-        console.error('Error sending email:', error)
+        Logger.error('Error sending email', error, c)
         throw new HTTPException(500, { message: 'Failed to send email' })
       }
 
@@ -94,7 +95,7 @@ ${message}
         throw error
       }
 
-      console.error('Error processing contact form:', error)
+      Logger.error('Error processing contact form', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

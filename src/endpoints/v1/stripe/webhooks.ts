@@ -6,6 +6,7 @@ import { AppContext } from 'lib/types/app-context'
 import { z } from 'zod'
 import { Bool, OpenAPIRoute, Str } from 'chanfana'
 import { stripeClient } from 'utils/clients/stripe'
+import { Logger } from 'utils/error-handling'
 
 // Stripe requires the raw body to construct the event.
 export const config = {
@@ -69,7 +70,7 @@ export class StripeWebhooks extends OpenAPIRoute {
 
     const stripe = stripeClient(c.env.STRIPE_SECRET_KEY_LIVE)
     const event = (await stripe.webhooks.constructEventAsync(buf, signature, webhookSecret)) as any
-    console.log(`Event received: ${event.type}`)
+    Logger.info(`Event received: ${event.type}`, c)
 
     if (relevantEvents.has(event.type)) {
       switch (event.type) {

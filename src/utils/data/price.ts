@@ -2,6 +2,7 @@ import Stripe from 'stripe'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { Database } from 'lib/types/database.types'
 import { AppContext } from 'lib/types/app-context'
+import { Logger } from 'utils/error-handling'
 
 export const upsertPriceRecord = async (c: AppContext, price: Stripe.Price) => {
   // Create a properly typed object that matches the database schema
@@ -25,9 +26,9 @@ export const upsertPriceRecord = async (c: AppContext, price: Stripe.Price) => {
   const { error } = await supabaseAdminClient(c).from('prices').upsert([priceData])
 
   if (error) {
-    console.error(`Error occurred while saving the price: ${error.message}`)
+    Logger.error(`Error occurred while saving the price: ${error.message}`, error, c)
   } else {
-    console.log(`Price saved: ${price.id}`)
+    Logger.info(`Price saved: ${price.id}`, c)
   }
 }
 
@@ -35,8 +36,8 @@ export const deletePriceRecord = async (c: AppContext, price: Stripe.Price) => {
   const { error } = await supabaseAdminClient(c).from('prices').delete().eq('id', price.id)
 
   if (error) {
-    console.error(`Error occurred while deleting the price: ${error.message}`)
+    Logger.error(`Error occurred while deleting the price: ${error.message}`, error, c)
   } else {
-    console.log(`Price deleted: ${price.id}`)
+    Logger.info(`Price deleted: ${price.id}`, c)
   }
 }

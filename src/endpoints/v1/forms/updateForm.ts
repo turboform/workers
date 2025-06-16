@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 export class UpdateForm extends OpenAPIRoute {
   schema = {
@@ -86,7 +87,7 @@ export class UpdateForm extends OpenAPIRoute {
         .single()
 
       if (updateError) {
-        console.error('Error updating form:', updateError)
+        Logger.error('Error updating form', updateError, c)
         throw new HTTPException(500, { message: 'Failed to update form' })
       }
 
@@ -99,7 +100,7 @@ export class UpdateForm extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in updateForm:', error)
+      Logger.error('Error in updateForm', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

@@ -1,6 +1,7 @@
 import { AppContext } from 'lib/types/app-context'
 import Stripe from 'stripe'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
+import { Logger } from 'utils/error-handling'
 
 export const upsertProductRecord = async (c: AppContext, product: Stripe.Product) => {
   const { error } = await supabaseAdminClient(c)
@@ -15,9 +16,9 @@ export const upsertProductRecord = async (c: AppContext, product: Stripe.Product
     })
 
   if (error) {
-    console.error(`Error occurred while saving the product: ${error.message}`)
+    Logger.error(`Error occurred while saving the product: ${error.message}`, error, c)
   } else {
-    console.log(`Product saved: ${product.id}`)
+    Logger.info(`Product saved: ${product.id}`, c)
   }
 }
 
@@ -34,11 +35,15 @@ export const deleteProductRecord = async (c: AppContext, product: Stripe.Product
       .match({ id: product.id })
 
     if (productDeleteError) {
-      console.error(`Error occurred while deleting the product: ${productDeleteError.message}`)
+      Logger.error(`Error occurred while deleting the product: ${productDeleteError.message}`, productDeleteError, c)
     } else {
-      console.log(`Prices and product deleted: ${product.id}`)
+      Logger.info(`Prices and product deleted: ${product.id}`, c)
     }
   } else {
-    console.error(`Error occurred while deleting the prices for product: ${priceDeleteError.message}`)
+    Logger.error(
+      `Error occurred while deleting the prices for product: ${priceDeleteError.message}`,
+      priceDeleteError,
+      c
+    )
   }
 }
