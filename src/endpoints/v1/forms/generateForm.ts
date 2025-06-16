@@ -2,7 +2,6 @@ import { z } from 'zod'
 import crypto from 'crypto'
 import { OpenAPIRoute } from 'chanfana'
 import { FormField } from 'lib/types/form'
-import { HTTPException } from 'hono/http-exception'
 import { AppContext } from 'lib/types/app-context'
 import { openAIClient } from 'utils/clients/openai'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
@@ -193,7 +192,7 @@ Make sure to include a sensible title for the form based on the description.
       enhancedDescription,
     }
   } catch (error) {
-    console.error('Error parsing OpenAI response:', error)
+    Logger.error('Error parsing OpenAI response', error, c)
     // Fallback to generate a basic title if parsing fails
     return {
       title: generateFallbackTitle(description),
