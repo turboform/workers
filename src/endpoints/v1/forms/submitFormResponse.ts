@@ -2,8 +2,8 @@ import { OpenAPIRoute, Str } from 'chanfana'
 import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
-import { HTTPException } from 'hono/http-exception'
 import { processIntegrations } from 'utils/integrations/processIntegrations'
+import { ErrorHandler, Logger, withErrorHandling } from 'utils/error-handling'
 
 export class SubmitFormResponse extends OpenAPIRoute {
   schema = {
@@ -36,28 +36,48 @@ export class SubmitFormResponse extends OpenAPIRoute {
   }
 
   async handle(c: AppContext) {
-    try {
+    return withErrorHandling(async (c: AppContext) => {
       const timestamp = c.req.header('X-Turboform-Timestamp')
       const signature = c.req.header('X-Turboform-Signature')
+
+      Logger.info('Form submission request received', c, {
+        hasTimestamp: !!timestamp,
+        hasSignature: !!signature,
+      })
 
       const { formId, responses } = await c.req.json()
 
       if (!formId) {
-        throw new HTTPException(400, { message: 'Form ID is required' })
+        ErrorHandler.throwValidationError('Form ID is required', 'formId')
       }
 
       if (!responses || typeof responses !== 'object') {
-        throw new HTTPException(400, { message: 'Responses are required and must be an object' })
+        ErrorHandler.throwValidationError('Responses are required and must be an object', 'responses')
       }
+
+      Logger.debug('Validating form submission', c, {
+        formId,
+        responseCount: Object.keys(responses).length,
+      })
 
       // Validate request signature
       if (!(await this.validateRequestSignature(c, formId, timestamp, signature))) {
-        throw new HTTPException(403, { message: 'Invalid or missing signature' })
+        Logger.warn('Form submission failed signature validation', c, {
+          formId,
+          hasTimestamp: !!timestamp,
+          hasSignature: !!signature,
+        })
+        ErrorHandler.throwForbiddenError('Invalid or missing signature')
       }
 
       // Check for timestamp freshness (within 5 minutes)
       if (!timestamp || !this.isTimestampValid(timestamp)) {
-        throw new HTTPException(403, { message: 'Request expired or invalid timestamp' })
+        Logger.warn('Form submission failed timestamp validation', c, {
+          formId,
+          timestamp,
+          isExpired: timestamp ? !this.isTimestampValid(timestamp) : 'missing',
+        })
+        ErrorHandler.throwForbiddenError('Request expired or invalid timestamp')
       }
 
       // Check if the form exists and is not a draft
@@ -68,28 +88,34 @@ export class SubmitFormResponse extends OpenAPIRoute {
       })
 
       if (error) {
-        console.error('Error submitting form response:', error)
-        throw new HTTPException(500, { message: 'Failed to submit form response' })
+        Logger.error('Database error submitting form response', error, c, {
+          formId,
+          responseCount: Object.keys(responses).length,
+        })
+        ErrorHandler.throwExternalServiceError('Database')
       }
 
+      Logger.info('Form response submitted successfully', c, {
+        formId,
+        responseCount: Object.keys(responses).length,
+      })
+
+      // Process integrations (non-blocking errors)
       try {
         await processIntegrations(c, formId, responses)
+        Logger.info('Form integrations processed successfully', c, { formId })
       } catch (integrationError) {
-        console.error('Error processing integrations:', integrationError)
+        Logger.error('Error processing form integrations', integrationError, c, {
+          formId,
+          step: 'integration-processing',
+        })
       }
 
-      return {
+      return c.json({
         success: true,
         message: 'Form response submitted successfully',
-      }
-    } catch (error) {
-      if (error instanceof HTTPException) {
-        throw error
-      }
-
-      console.error('Error in submitFormResponse:', error)
-      throw new HTTPException(500, { message: 'Internal server error' })
-    }
+      })
+    }, 'submitFormResponse')(c)
   }
 
   private async validateRequestSignature(
@@ -126,7 +152,11 @@ export class SubmitFormResponse extends OpenAPIRoute {
 
       return this.timingSafeEqual(signature, expectedSignature)
     } catch (error) {
-      console.error('Error validating signature:', error)
+      Logger.error('Error validating request signature', error, c, {
+        formId,
+        hasSignature: !!signature,
+        hasTimestamp: !!timestamp,
+      })
       return false
     }
   }
