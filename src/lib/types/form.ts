@@ -15,7 +15,7 @@ export interface Form {
   schema: FormField[]
   user_id?: string
   created_at?: string
-  responseCount?: number
+  responseCount?: number // TODO: make underscore case - response_count
   expires_at?: string
   is_public?: boolean
   is_draft?: boolean
