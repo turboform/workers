@@ -2,10 +2,10 @@ import { z } from 'zod'
 import crypto from 'crypto'
 import { OpenAPIRoute } from 'chanfana'
 import { FormField } from 'lib/types/form'
-import { HTTPException } from 'hono/http-exception'
 import { AppContext } from 'lib/types/app-context'
 import { openAIClient } from 'utils/clients/openai'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
+import { ErrorHandler, Logger, withErrorHandling } from 'utils/error-handling'
 
 export class GenerateForm extends OpenAPIRoute {
   schema = {
@@ -42,17 +42,27 @@ export class GenerateForm extends OpenAPIRoute {
   }
 
   async handle(c: AppContext) {
-    const { description } = await c.req.json()
+    return withErrorHandling(async (c: AppContext) => {
+      const { description } = await c.req.json()
+      const user = c.get('user')
 
-    if (!description) {
-      throw new HTTPException(400, { message: 'Description is required' })
-    }
+      if (!description?.trim()) {
+        ErrorHandler.throwValidationError('Description is required and cannot be empty', 'description')
+      }
 
-    const user = c.get('user')
+      Logger.info('Generating form with AI', c, {
+        userId: user?.id,
+        descriptionLength: description.length,
+      })
 
-    try {
       const { title, formFields, enhancedDescription } = await generateFormWithOpenAI(c, description)
       const short_id = generateShortId()
+
+      Logger.debug('Form generation completed', c, {
+        title,
+        fieldCount: formFields.length,
+        shortId: short_id,
+      })
 
       // Save the form as a draft
       const { data: form, error: saveError } = await supabaseAdminClient(c)
@@ -60,7 +70,7 @@ export class GenerateForm extends OpenAPIRoute {
         .insert({
           user_id: user?.id,
           title,
-          description: enhancedDescription, // Use the enhanced description
+          description: enhancedDescription,
           schema: formFields as any,
           is_draft: true,
           created_at: new Date().toISOString(),
@@ -71,25 +81,27 @@ export class GenerateForm extends OpenAPIRoute {
         .single()
 
       if (saveError) {
-        console.error('Error saving draft form:', saveError)
-        // If saving fails, still return the generated form but log the error
+        Logger.error('Error saving draft form', saveError, c, {
+          userId: user?.id,
+          title,
+          shortId: short_id,
+        })
+      } else {
+        Logger.info('Draft form saved successfully', c, {
+          formId: form?.id,
+          shortId: short_id,
+        })
       }
 
-      return c.json(
-        {
-          id: form?.id,
-          title,
-          description: enhancedDescription, // Return the enhanced description
-          schema: formFields,
-          is_draft: true,
-          short_id,
-        },
-        { status: 200 }
-      )
-    } catch (error: any) {
-      console.error('Error generating form with OpenAI:', error)
-      throw new HTTPException(500, { message: 'Failed to generate form with AI' })
-    }
+      return c.json({
+        id: form?.id,
+        title,
+        description: enhancedDescription,
+        schema: formFields,
+        is_draft: true,
+        short_id,
+      })
+    }, 'generateForm')(c)
   }
 }
 
@@ -180,7 +192,7 @@ Make sure to include a sensible title for the form based on the description.
       enhancedDescription,
     }
   } catch (error) {
-    console.error('Error parsing OpenAI response:', error)
+    Logger.error('Error parsing OpenAI response', error, c)
     // Fallback to generate a basic title if parsing fails
     return {
       title: generateFallbackTitle(description),

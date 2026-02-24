@@ -1,6 +1,7 @@
 import { AppContext } from 'lib/types/app-context'
 import { stripeClient } from 'utils/clients/stripe'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
+import { Logger } from 'utils/error-handling'
 
 export const getOrCreateCustomer = async (c: AppContext, userId: string, email: string): Promise<string | null> => {
   const { data, error: selectError } = await supabaseAdminClient(c)
@@ -29,7 +30,7 @@ export const getOrCreateCustomer = async (c: AppContext, userId: string, email: 
       ])
 
     if (insertError) {
-      console.error(insertError)
+      Logger.error('Error inserting customer', insertError, c)
       return null
     }
 
@@ -47,7 +48,7 @@ export const deleteCustomer = async (c: AppContext, stripeCustomerId: string) =>
     .single()
 
   if (selectError) {
-    console.warn(`Customer with ID '${stripeCustomerId}' does not exist. Error: ${selectError.message}`)
+    Logger.warn(`Customer with ID '${stripeCustomerId}' does not exist. Error: ${selectError.message}`, c)
     return
   }
 
@@ -57,8 +58,9 @@ export const deleteCustomer = async (c: AppContext, stripeCustomerId: string) =>
     .match({ user_id: data.user_id })
 
   if (deleteSubscriptionError) {
-    console.warn(
-      `Could not delete subscription for customer with ID '${stripeCustomerId}'. Error: ${deleteSubscriptionError.message}`
+    Logger.warn(
+      `Could not delete subscription for customer with ID '${stripeCustomerId}'. Error: ${deleteSubscriptionError.message}`,
+      c
     )
     return
   }
@@ -69,8 +71,8 @@ export const deleteCustomer = async (c: AppContext, stripeCustomerId: string) =>
     .match({ stripe_customer_id: stripeCustomerId })
 
   if (deleteCustomerError) {
-    console.warn(`Could not delete customer with ID '${stripeCustomerId}'. Error: ${deleteCustomerError.message}`)
+    Logger.warn(`Could not delete customer with ID '${stripeCustomerId}'. Error: ${deleteCustomerError.message}`, c)
   } else {
-    console.log(`Customer with ID '${stripeCustomerId}' deleted successfully.`)
+    Logger.info(`Customer with ID '${stripeCustomerId}' deleted successfully.`, c)
   }
 }

@@ -27,7 +27,7 @@ import { UploadFormLogo } from 'endpoints/v1/forms/uploadFormLogo'
 import { ChatWithResponses } from 'endpoints/v1/chat/chatWithResponses'
 import { GetConversations, GetConversationMessages, DeleteConversation } from 'endpoints/v1/chat/conversations'
 import { requireAuth } from 'utils/auth/middleware'
-import { HTTPException } from 'hono/http-exception'
+import { ErrorHandler } from 'utils/error-handling'
 
 // Start a Hono app
 const app = new Hono()
@@ -38,25 +38,7 @@ const openapi = fromHono(app, {
 })
 
 app.onError((e, c) => {
-  // TODO: refine error handling
-  console.error('Error in Hono:', JSON.stringify(e))
-  if (e instanceof HTTPException && e.status < 500) {
-    return c.json(
-      {
-        status: e.status,
-        message: e.message,
-      },
-      { status: e.status }
-    )
-  }
-
-  return c.json(
-    {
-      status: 500,
-      message: 'Internal server error',
-    },
-    { status: 500 }
-  )
+  return ErrorHandler.handleError(e, c, 'global-error-handler')
 })
 
 // TODO: legacy routes - delete when no longer used

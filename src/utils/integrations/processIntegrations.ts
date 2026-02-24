@@ -4,6 +4,7 @@ import { IntegrationType, FormIntegration } from 'lib/types/integration'
 import type { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { Database } from 'lib/types/database.types'
+import { Logger } from 'utils/error-handling'
 
 type Form = Database['public']['Tables']['forms']['Row']
 
@@ -16,7 +17,7 @@ export async function processIntegrations(c: AppContext, formId: string, respons
       .single()
 
     if (formError || !form) {
-      console.error('Error fetching form for integration processing:', formError)
+      Logger.error('Error fetching form for integration processing', formError, c)
       return
     }
 
@@ -27,7 +28,7 @@ export async function processIntegrations(c: AppContext, formId: string, respons
       .eq('is_enabled', true)
 
     if (integrationsError) {
-      console.error('Error fetching integrations:', integrationsError)
+      Logger.error('Error fetching integrations', integrationsError, c)
       return
     }
 
@@ -35,7 +36,7 @@ export async function processIntegrations(c: AppContext, formId: string, respons
       await processIntegration(c, integration, form, responses)
     }
   } catch (error) {
-    console.error('Error processing integrations:', error)
+    Logger.error('Error processing integrations', error, c)
   }
 }
 
@@ -68,10 +69,10 @@ async function processIntegration(
         await processWebhookIntegration(config, form, responses)
         break
       default:
-        console.warn(`Unknown integration type: ${integration_type}`)
+        Logger.warn(`Unknown integration type: ${integration_type}`, c)
     }
   } catch (error) {
-    console.error(`Error processing ${integration_type} integration:`, error)
+    Logger.error(`Error processing ${integration_type} integration`, error, c)
   }
 }
 
@@ -80,13 +81,13 @@ async function processEmailIntegration(c: AppContext, config: any, form: Form, r
     const { to, cc, subject_template } = config
 
     if (!to || !Array.isArray(to) || to.length === 0) {
-      console.error('Invalid email configuration: missing recipients')
+      Logger.error('Invalid email configuration: missing recipients', null, c)
       return
     }
 
     const resendApiKey = c.env.RESEND_API_KEY
     if (!resendApiKey) {
-      console.error('Resend API key not configured')
+      Logger.error('Resend API key not configured', null, c)
       return
     }
 
@@ -116,9 +117,9 @@ async function processEmailIntegration(c: AppContext, config: any, form: Form, r
       `,
     })
 
-    console.log('Email response:', response.data)
+    Logger.info('Email sent successfully', c, { responseId: response.data?.id })
   } catch (error) {
-    console.error('Error sending email notification:', error)
+    Logger.error('Error sending email notification', error, c)
   }
 }
 
@@ -127,7 +128,7 @@ async function processSlackIntegration(config: any, form: Form, responses: Recor
     const { webhook_url, channels } = config
 
     if (!webhook_url) {
-      console.error('Invalid Slack configuration: missing webhook URL')
+      Logger.error('Invalid Slack configuration: missing webhook URL', null, c)
       return
     }
 
@@ -175,9 +176,9 @@ async function processSlackIntegration(config: any, form: Form, responses: Recor
       },
     })
 
-    console.log('Slack response:', response.data)
+    Logger.info('Slack notification sent successfully', c, { status: response.status })
   } catch (error) {
-    console.error('Error sending Slack notification:', error)
+    Logger.error('Error sending Slack notification', error, c)
   }
 }
 
@@ -186,7 +187,7 @@ async function processTelegramIntegration(config: any, form: Form, responses: Re
     const { bot_token, chat_id } = config
 
     if (!bot_token || !chat_id) {
-      console.error('Invalid Telegram configuration: missing bot token or chat ID')
+      Logger.error('Invalid Telegram configuration: missing bot token or chat ID', null, c)
       return
     }
 
@@ -232,9 +233,9 @@ ${escapedFormattedResponses}
       }
     )
 
-    console.log('Telegram response:', response.data)
+    Logger.info('Telegram notification sent successfully', c, { messageId: response.data?.result?.message_id })
   } catch (error) {
-    console.error('Error sending Telegram notification:', error)
+    Logger.error('Error sending Telegram notification', error, c)
   }
 }
 
@@ -243,7 +244,7 @@ async function processZapierIntegration(config: any, form: Form, responses: Reco
     const { webhook_url } = config
 
     if (!webhook_url) {
-      console.error('Invalid Zapier configuration: missing webhook URL')
+      Logger.error('Invalid Zapier configuration: missing webhook URL', null, c)
       return
     }
 
@@ -266,9 +267,9 @@ async function processZapierIntegration(config: any, form: Form, responses: Reco
       },
     })
 
-    console.log('Zapier response:', response.data)
+    Logger.info('Zapier webhook sent successfully', c, { status: response.status })
   } catch (error) {
-    console.error('Error sending data to Zapier:', error)
+    Logger.error('Error sending data to Zapier', error, c)
   }
 }
 
@@ -277,7 +278,7 @@ async function processMakeIntegration(config: any, form: Form, responses: Record
     const { webhook_url } = config
 
     if (!webhook_url) {
-      console.error('Invalid Make.com configuration: missing webhook URL')
+      Logger.error('Invalid Make.com configuration: missing webhook URL', null, c)
       return
     }
 
@@ -300,9 +301,9 @@ async function processMakeIntegration(config: any, form: Form, responses: Record
       },
     })
 
-    console.log('Make.com response:', response.data)
+    Logger.info('Make.com webhook sent successfully', c, { status: response.status })
   } catch (error) {
-    console.error('Error sending data to Make.com:', error)
+    Logger.error('Error sending data to Make.com', error, c)
   }
 }
 
@@ -311,7 +312,7 @@ async function processWebhookIntegration(config: any, form: Form, responses: Rec
     const { url, method, headers, include_form_data } = config
 
     if (!url || !method) {
-      console.error('Invalid webhook configuration: missing URL or method')
+      Logger.error('Invalid webhook configuration: missing URL or method', null, c)
       return
     }
 
@@ -343,8 +344,8 @@ async function processWebhookIntegration(config: any, form: Form, responses: Rec
       data: payload,
     })
 
-    console.log('Webhook response:', response.data)
+    Logger.info('Webhook sent successfully', c, { status: response.status, url })
   } catch (error) {
-    console.error('Error sending data to webhook:', error)
+    Logger.error('Error sending data to webhook', error, c)
   }
 }

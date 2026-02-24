@@ -4,6 +4,7 @@ import { AppContext } from 'lib/types/app-context'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { HTTPException } from 'hono/http-exception'
 import crypto from 'crypto'
+import { ErrorHandler, Logger, withErrorHandling } from 'utils/error-handling'
 
 // Helper to generate a short ID for forms
 function generateShortId(length = 8): string {
@@ -51,23 +52,38 @@ export class CreateForm extends OpenAPIRoute {
   }
 
   async handle(c: AppContext) {
-    try {
+    return withErrorHandling(async (c: AppContext) => {
       const user = c.get('user')
       const authToken = c.get('authToken')
+
+      Logger.info('Creating new form', c, { userId: user.id })
 
       // Parse the request body
       const { title, description, schema, expires_at, primary_color, secondary_color, logo_url } = await c.req.json()
 
+      // Validate required fields
+      if (!title?.trim()) {
+        ErrorHandler.throwValidationError('Title is required and cannot be empty', 'title')
+      }
+      if (!description?.trim()) {
+        ErrorHandler.throwValidationError('Description is required and cannot be empty', 'description')
+      }
+      if (!schema) {
+        ErrorHandler.throwValidationError('Form schema is required', 'schema')
+      }
+
       // Generate a unique short ID
       const short_id = generateShortId()
+
+      Logger.debug('Generated short ID for form', c, { shortId: short_id, title })
 
       // Insert form into database
       const { data, error } = await supabaseApiClient(authToken, c)
         .from('forms')
         .insert({
           user_id: user.id,
-          title,
-          description,
+          title: title.trim(),
+          description: description.trim(),
           schema,
           short_id,
           expires_at: expires_at || null,
@@ -79,20 +95,23 @@ export class CreateForm extends OpenAPIRoute {
         .single()
 
       if (error) {
-        console.error('Error creating form:', error)
-        throw new HTTPException(500, { message: 'Failed to create form' })
+        Logger.error('Database error creating form', error, c, {
+          userId: user.id,
+          title,
+          shortId: short_id,
+        })
+        ErrorHandler.throwExternalServiceError('Database')
       }
 
-      return {
+      Logger.info('Form created successfully', c, {
+        formId: data.id,
+        shortId: short_id,
+        userId: user.id,
+      })
+
+      return c.json({
         form: data,
-      }
-    } catch (error) {
-      if (error instanceof HTTPException) {
-        throw error
-      }
-
-      console.error('Error in createForm:', error)
-      throw new HTTPException(500, { message: 'Internal server error' })
-    }
+      })
+    }, 'createForm')(c)
   }
 }

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 const ConversationSchema = z.object({
   id: z.string().uuid(),
@@ -72,7 +73,7 @@ export class GetConversations extends OpenAPIRoute {
         .order('updated_at', { ascending: false })
 
       if (error) {
-        console.error('Error fetching conversations:', error)
+        Logger.error('Error fetching conversations', error, c)
         throw new HTTPException(500, { message: 'Failed to fetch conversations' })
       }
 
@@ -99,7 +100,7 @@ export class GetConversations extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in getConversations:', error)
+      Logger.error('Error in getConversations', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }
@@ -164,7 +165,7 @@ export class GetConversationMessages extends OpenAPIRoute {
         .order('created_at', { ascending: true })
 
       if (error) {
-        console.error('Error fetching messages:', error)
+        Logger.error('Error fetching messages', error, c)
         throw new HTTPException(500, { message: 'Failed to fetch messages' })
       }
 
@@ -174,7 +175,7 @@ export class GetConversationMessages extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in getConversationMessages:', error)
+      Logger.error('Error in getConversationMessages', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }
@@ -225,7 +226,7 @@ export class DeleteConversation extends OpenAPIRoute {
         .eq('id', conversationId)
 
       if (error) {
-        console.error('Error deleting conversation:', error)
+        Logger.error('Error deleting conversation', error, c)
         throw new HTTPException(500, { message: 'Failed to delete conversation' })
       }
 
@@ -235,7 +236,7 @@ export class DeleteConversation extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in deleteConversation:', error)
+      Logger.error('Error in deleteConversation', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

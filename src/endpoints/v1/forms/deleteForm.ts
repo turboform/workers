@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 export class DeleteForm extends OpenAPIRoute {
   schema = {
@@ -43,14 +44,14 @@ export class DeleteForm extends OpenAPIRoute {
         .eq('form_id', formId)
 
       if (responsesError) {
-        console.error('Error deleting form responses:', responsesError)
+        Logger.error('Error deleting form responses', responsesError, c)
         throw new HTTPException(500, { message: 'Failed to delete associated form responses' })
       }
 
       const { error: deleteError } = await supabaseApiClient(authToken, c).from('forms').delete().eq('id', formId)
 
       if (deleteError) {
-        console.error('Error deleting form:', deleteError)
+        Logger.error('Error deleting form', deleteError, c)
         throw new HTTPException(500, { message: 'Failed to delete form' })
       }
 
@@ -62,7 +63,7 @@ export class DeleteForm extends OpenAPIRoute {
       if (error instanceof HTTPException) {
         throw error
       }
-      console.error('Error in deleteForm:', error)
+      Logger.error('Error in deleteForm', error, c)
       throw new HTTPException(500, { message: 'An unexpected error occurred while deleting the form' })
     }
   }

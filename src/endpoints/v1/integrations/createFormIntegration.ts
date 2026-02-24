@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { HTTPException } from 'hono/http-exception'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
+import { Logger } from 'utils/error-handling'
 
 export class CreateFormIntegration extends OpenAPIRoute {
   schema = {
@@ -57,7 +58,7 @@ export class CreateFormIntegration extends OpenAPIRoute {
         .single()
 
       if (error) {
-        console.error('Error creating form integration:', error)
+        Logger.error('Error creating form integration', error, c)
         throw new HTTPException(500, { message: 'Failed to create form integration' })
       }
 
@@ -67,7 +68,7 @@ export class CreateFormIntegration extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in createFormIntegration:', error)
+      Logger.error('Error in createFormIntegration', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

@@ -4,6 +4,7 @@ import { AppContext } from 'lib/types/app-context'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
 import { openAIClient } from 'utils/clients/openai'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 const ChatRequestSchema = z.object({
   formId: z.string().uuid(),
@@ -88,12 +89,12 @@ export class ChatWithResponses extends OpenAPIRoute {
       })
 
       if (searchError) {
-        console.error('Vector search error:', searchError)
+        Logger.error('Vector search error', searchError, c)
         throw new HTTPException(500, { message: 'Failed to search responses' })
       }
 
       // Take top 20 most relevant responses
-      console.log('Similar responses:', similarResponses)
+      Logger.debug('Similar responses found', c, { responseCount: similarResponses?.length || 0 })
       const relevantResponses = (similarResponses || []).slice(0, 20)
 
       // Create or get conversation
@@ -112,7 +113,7 @@ export class ChatWithResponses extends OpenAPIRoute {
           .single()
 
         if (convError || !newConversation) {
-          console.error('Conversation creation error:', convError)
+          Logger.error('Conversation creation error', convError, c)
           throw new HTTPException(500, { message: 'Failed to create conversation' })
         }
 
@@ -128,7 +129,7 @@ export class ChatWithResponses extends OpenAPIRoute {
       })
 
       if (msgError) {
-        console.error('Message save error:', msgError)
+        Logger.error('Message save error', msgError, c)
       }
 
       // Get conversation history for context
@@ -248,7 +249,7 @@ INSTRUCTIONS:
             })
             await writer.write(encoder.encode(`data: ${finalPayload}\n\n`))
           } catch (error) {
-            console.error('Stream error:', error)
+            Logger.error('Stream error', error, c)
             const errorPayload = JSON.stringify({ error: 'Stream processing error' })
             await writer.write(encoder.encode(`data: ${errorPayload}\n\n`))
           } finally {
@@ -257,7 +258,7 @@ INSTRUCTIONS:
         }
 
         // Start processing in the background
-        streamProcessing().catch(console.error)
+        streamProcessing().catch((error) => Logger.error('Background stream processing error', error, c))
 
         // Return the readable stream
         return c.body(readable)
@@ -298,7 +299,7 @@ INSTRUCTIONS:
       if (error instanceof HTTPException) {
         throw error
       }
-      console.error('Chat error:', error)
+      Logger.error('Chat error', error, c)
       throw new HTTPException(500, {
         message: 'Failed to process chat request',
       })

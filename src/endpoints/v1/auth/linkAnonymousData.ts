@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { supabaseAdminClient } from 'utils/clients/supabase/admin'
 import { HTTPException } from 'hono/http-exception'
+import { Logger } from 'utils/error-handling'
 
 export class LinkAnonymousData extends OpenAPIRoute {
   schema = {
@@ -68,7 +69,7 @@ export class LinkAnonymousData extends OpenAPIRoute {
         .eq('user_id', anonymousUserId)
 
       if (transferError) {
-        console.error('Error transferring forms:', transferError)
+        Logger.error('Error transferring forms', transferError, c)
         throw new HTTPException(500, { message: 'Failed to transfer forms' })
       }
 
@@ -78,7 +79,7 @@ export class LinkAnonymousData extends OpenAPIRoute {
         throw error
       }
 
-      console.error('Error in linkAnonymousData:', error)
+      Logger.error('Error in linkAnonymousData', error, c)
       throw new HTTPException(500, { message: 'Internal server error' })
     }
   }

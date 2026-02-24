@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppContext } from 'lib/types/app-context'
 import { openAIClient } from 'utils/clients/openai'
 import { supabaseApiClient } from 'utils/clients/supabase/api'
+import { Logger } from 'utils/error-handling'
 
 export class QuestionAnswering extends OpenAPIRoute {
   schema = {
@@ -67,7 +68,7 @@ export class QuestionAnswering extends OpenAPIRoute {
       })
 
       if (searchError) {
-        console.error('Vector similarity search failed:', searchError)
+        Logger.error('Vector similarity search failed', searchError, c)
         throw new Error(`Failed to search similar responses: ${searchError.message}`)
       }
 
@@ -144,8 +145,8 @@ async function generateOpenAIEmbedding(c: AppContext, text: string): Promise<num
  * Generates an answer from the given context using OpenAI
  */
 async function generateAnswerFromContext(c: AppContext, question: string, context: string): Promise<string> {
-  console.log('Question:', question)
-  console.log('Context:', context)
+  Logger.info('Question:', c, { question })
+  Logger.info('Context:', c, { context })
   const openai = openAIClient(c.env.OPENAI_API_KEY)
 
   const prompt = `
